@@ -13,11 +13,23 @@ from data import data_util
 class Tabular(object):
   """Tabular data loader."""
 
-  def __init__(self, data_name='Adult'):
-    self.data_name = data_name
-    self.load_raw_data(data_name=data_name)
+  def __init__(self, dataset_name='Adult'):
+    print('Using ', dataset_name)
+    self.dataset_name = dataset_name
+    self.load_raw_data(dataset_name=dataset_name)
 
-  def load_raw_data(self, data_name='Adult'):
+    # Create Torch Custom Datasets
+    self.train_set = data_util.ArrayFromMemory(data=self.x_train, \
+                                          target=self.y_train, \
+                                          control=self.c_train)
+    self.val_set = data_util.ArrayFromMemory(data=self.x_valid, \
+                                          target=self.y_valid, \
+                                          control=self.c_valid)
+    self.test_set = data_util.ArrayFromMemory(data=self.x_test, \
+                                          target=self.y_test, \
+                                          control=self.c_test)
+
+  def load_raw_data(self, dataset_name='Adult'):
     """Load raw tabular data.
     """
 
@@ -25,13 +37,13 @@ class Tabular(object):
     data_util.maybe_download(adult_flag = True, german_flag = True)
 
     # Load the dataset
-    if data_name == 'Adult':
+    if dataset_name == 'Adult':
       train_data, train_target, train_control,\
         valid_data, valid_target, valid_control,\
         test_data, test_target, test_control = \
           data_util.process_adult_data()
       
-    elif data_name == 'German':
+    elif dataset_name == 'German':
       train_data, train_target, train_control,\
         valid_data, valid_target, valid_control,\
         test_data, test_target, test_control = \
@@ -70,25 +82,14 @@ class Tabular(object):
 
     del kwargs
 
-    # Create Torch Custom Datasets
-    train_set = data_util.ArrayFromMemory(data=self.x_train, \
-                                          target=self.y_train, \
-                                          control=self.c_train)
-    valid_set = data_util.ArrayFromMemory(data=self.x_valid, \
-                                          target=self.y_valid, \
-                                          control=self.c_valid)
-    test_set = data_util.ArrayFromMemory(data=self.x_test, \
-                                          target=self.y_test, \
-                                          control=self.c_test)
-
     # Generate DataLoaders
-    train_loader = torch.utils.data.DataLoader(train_set,
+    train_loader = torch.utils.data.DataLoader(self.train_set,
                                                batch_size=batch_size,
                                                shuffle= True)
-    valid_loader = torch.utils.data.DataLoader(valid_set,
+    valid_loader = torch.utils.data.DataLoader(self.val_set,
                                                batch_size=batch_size,
                                                shuffle= False)
-    test_loader = torch.utils.data.DataLoader(test_set,
+    test_loader = torch.utils.data.DataLoader(self.test_set,
                                                batch_size=batch_size,
                                                shuffle= False)
 

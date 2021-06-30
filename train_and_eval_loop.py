@@ -7,10 +7,11 @@
 from absl import app
 from absl import flags
 
-from supervised import supervised
+from supervised import Supervised
 
 from util.utils import HParams
 
+import pdb
 
 # Dataset.
 flags.DEFINE_enum(name='dataset', default='Adult',
@@ -26,8 +27,8 @@ flags.DEFINE_enum(name='method', default='supervised',
                   enum_values=['supervised', 'suprawlsian'],
                   help='method.')
 flags.DEFINE_integer(name='seed', default=42, help='random seed for optimizer.')
-flags.DEFINE_enum(name='optimizer', default='sgd',
-                  enum_values=['sgd'],
+flags.DEFINE_enum(name='optimizer', default='Adam',
+                  enum_values=['Adam'],
                   help='optimization method.')
 flags.DEFINE_enum(name='scheduler', default='',
                   enum_values=['', 'linear', 'step', 'cosine'],
@@ -61,7 +62,7 @@ def get_trainer(hparams):
     """Gets trainer for the required method."""
 
     if hparams.method == 'supervised':
-        trainer = supervised(hparams)
+        trainer = Supervised(hparams)
     else:
         raise NotImplementedError
 
@@ -80,6 +81,7 @@ def main(unused_argv):
 
     # Run the training routine
     trainer.get_config()
+    pdb.set_trace()
     trainer.train()
 
 

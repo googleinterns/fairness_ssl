@@ -4,3 +4,8 @@
 
 
 
+Todo-
+1. (lokhandevishnu:) Fix for independent functions in train.py code
+2. (lokhandevishnu:) github auth
+
+

@@ -114,7 +114,8 @@ class BaseTrain(object):
 
     def get_ckpt(self):
         """Loads from checkpoint when exists."""
-
+        """Note. Function cannot be called independently"""
+        
         ckpt_name = os.path.join(self.ckpt_path, 'ckpt.pth')
         if self.hp.resume is True and os.path.exists(ckpt_name):
             state = torch.load(ckpt_name)
@@ -128,7 +129,8 @@ class BaseTrain(object):
 
     def save_checkpoint(self, suffix='ckpt'):
         """Saves model checkpoint."""
-
+        """Note. Function cannot be called independently"""
+        
         ckpt_name = os.path.join(self.ckpt_path, f'{suffix}.pth')
         state = {
             'hparams': self.hp,
@@ -220,6 +222,8 @@ class BaseTrain(object):
                         }
 
     def reset_metrics(self, prefix=''):
+        """Note. Function cannot be called independently"""
+        
         for key in self.metrics:
             if key.startswith(prefix):
                 if isinstance(self.metrics[key], float):
@@ -229,7 +233,8 @@ class BaseTrain(object):
 
     def monitor(self):
         """Prints monitoring variables."""
-
+        """Note. Function cannot be called independently"""
+        
         # Command line outputs.
         t = 'time'
         print(f'[{self.epoch}/{self.hp.num_epoch}] {t: <7} (train) {self.train_time: .2f} (min) (eval) {self.eval_time: .2f} (min)')
@@ -303,6 +308,7 @@ class BaseTrain(object):
 
     def train_epoch(self, train_loader):
         """Trains a model for one epoch."""
+        """Note: Should be called only after get_config"""
 
         self.model.train()
         for batch in train_loader:
@@ -310,12 +316,15 @@ class BaseTrain(object):
 
     def train_epoch_begin(self):
         """Calls at the beginning of the epoch."""
-
+        """Note: Should be called only after get_config"""
+        """Requires self.metrics to be defined"""
+        
         self.reset_metrics(prefix='train')
         self.train_time = time.time()
 
     def train_epoch_end(self):
         """Calls at the end of the epoch."""
+        """Note: Should be called only after get_config"""                
 
         self.train_time = (time.time() - self.train_time) / 60.0
         self.eval_time = time.time()
@@ -335,7 +344,9 @@ class BaseTrain(object):
 
     def eval_epoch(self, data_loader, prefix='test'):
         """Evaluates a model for one epoch."""
-
+        """Note: Should be called only after get_config"""
+        """Requires self.metrics to be defined"""
+        
         self.model.eval()
         self.reset_metrics(prefix=prefix)
         for batch in data_loader:
@@ -343,20 +354,5 @@ class BaseTrain(object):
 
     def eval_step(self, batch, prefix='test'):
         """Evaluates a model for one step."""
-
-        # Prepare daata.
-        img = batch['image'].float()
-        mask = batch['mask'].float()
-        if torch.cuda.is_available():
-            img = img.cuda()
-            mask = mask.cuda()
-
-        with torch.no_grad():
-            logit = self.model(img)
-        dice, iou, acc = get_accuracy(mask, (torch.sigmoid(logit) > 0.5).float())
-
-        # Update metrics.
-        self.metrics[f'{prefix}.batch'] += len(img)
-        self.metrics[f'{prefix}.dice'] += (dice.item() * len(img))
-        self.metrics[f'{prefix}.iou'] += (iou.item() * len(img))
-        self.metrics[f'{prefix}.acc'] += (acc.item() * len(img))
+        """Note: Should be called only after get_config"""
+        pass

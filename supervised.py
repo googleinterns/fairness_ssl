@@ -50,6 +50,9 @@ class Supervised(BaseTrain):
         self.metrics['train.acc'] += (acc.item() * len(img))
         '''
 
+    def eval_step(self, batch, prefix='test'):
+        pass
+
 if __name__ == '__main__':
     trainer = Supervised(hparams=HParams({'dataset': 'Adult',
                                          'batch_size': 64,

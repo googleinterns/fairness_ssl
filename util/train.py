@@ -26,7 +26,15 @@ class BaseTrain(object):
     def __init__(self, hparams):
         self.hp = hparams
         self.dataset_name = hparams.dataset
-        self.get_ckpt_path_suffix()
+        self.get_ckpt_path_suffix() # sets self.file_suffix
+
+        # Set file path to save.
+        self.get_ckpt_path() # 
+        self.set_ckpt_path() # sets self.ckpt_path, self.tb_path, self.stat_path
+
+        # Set tensorboards.
+        self.writer = SummaryWriter(log_dir=self.tb_path)
+        
 
     def get_dataset(self):
         """Gets dataset."""
@@ -191,28 +199,24 @@ class BaseTrain(object):
         self.optimizer = self.get_optimizer(self.model.parameters())
         self.scheduler = self.get_scheduler(self.optimizer)
 
-        # Set file path to save.
-        self.get_ckpt_path()
-        self.set_ckpt_path()
-
-        # Set tensorboards.
-        self.writer = SummaryWriter(log_dir=self.tb_path)
-
     def get_metrics(self):
         """Gets metrics."""
         self.metrics = {'train.loss': 0.0,
                         'train.batch': 0.0,
-                        'train.dice': 0.0,
-                        'train.iou': 0.0,
                         'train.acc': 0.0,
+                        'train.worstacc': 0.0,
+                        'train.auc': 0.0,
+                        'train.worstauc': 0.0
                         'val.batch': 0.0,
-                        'val.dice': 0.0,
-                        'val.iou': 0.0,
                         'val.acc': 0.0,
+                        'val.worstacc': 0.0,
+                        'val.auc': 0.0,
+                        'val.worstauc': 0.0,
                         'test.batch': 0.0,
-                        'test.dice': 0.0,
-                        'test.iou': 0.0,
                         'test.acc': 0.0,
+                        'test.worstacc': 0.0,
+                        'test.auc': 0.0,
+                        'test.worstauc': 0.0
                         }
 
     def reset_metrics(self, prefix=''):
@@ -231,14 +235,14 @@ class BaseTrain(object):
         print(f'[{self.epoch}/{self.hp.num_epoch}] {t: <7} (train) {self.train_time: .2f} (min) (eval) {self.eval_time: .2f} (min)')
         for p in ['train', 'val', 'test']:
             string_to_print = f'[{self.epoch}/{self.hp.num_epoch}] {p: <7}'
-            for m in ['dice', 'iou', 'acc']:
+            for m in ['acc', 'worstacc', 'auc', 'worstauc']:
                 score = self.metrics[f'{p}.{m}'] / self.metrics[f'{p}.batch']
                 string_to_print += f' {m} {score:.4f}'
             print(string_to_print)
 
         # Tensorboards.
         for p in ['train', 'val', 'test']:
-            for m in ['dice', 'iou', 'acc']:
+            for m in ['acc', 'worstacc', 'auc', 'worstauc']:
                 score = self.metrics[f'{p}.{m}'] / self.metrics[f'{p}.batch']
                 self.writer.add_scalar(f'{p}/{m}', score, self.epoch)
 
@@ -272,12 +276,12 @@ class BaseTrain(object):
     def train(self):
         """Trains a model."""
 
-        start_epoch = self.train_begin()
+        start_epoch = self.train_begin() # calls get_metrics(), get_ckpt
         for epoch in range(start_epoch, self.hp.num_epoch):
-            self.train_epoch_begin()
-            self.train_epoch(self.train_loader)
-            self.train_epoch_end()
-        self.train_end()
+            self.train_epoch_begin() # calls reset_metrics(), train_tim
+            self.train_epoch(self.train_loader) # calls train_step
+            self.train_epoch_end() # calls eval_epoch, scheduler, monitor, save_checkpoint
+        self.train_end() # calls save_checkpoint, dump_stats_to_json
 
     def train_begin(self):
         """Calls at the beginning of the training."""
@@ -325,33 +329,9 @@ class BaseTrain(object):
 
     def train_step(self, batch):
         """Trains a model for one step."""
-
-        # Prepare data.
-        img = batch['image'].float()
-        mask = batch['mask'].float()
-        if torch.cuda.is_available():
-            img = img.cuda()
-            mask = mask.cuda()
-
-        # Compute loss.
-        logit = self.model(img)
-        loss = F.binary_cross_entropy_with_logits(logit, mask, reduction='none')
-        loss = loss.mean()
-
-        # Compute per-pixel accuracy, dice, iou.
-        dice, iou, acc = get_accuracy(mask, (torch.sigmoid(logit) > 0.5).float())
-
-        # Compute gradient.
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-
-        # Update metrics.
-        self.metrics['train.loss'] += (loss.item() * len(img))
-        self.metrics['train.batch'] += len(img)
-        self.metrics['train.dice'] += (dice.item() * len(img))
-        self.metrics['train.iou'] += (iou.item() * len(img))
-        self.metrics['train.acc'] += (acc.item() * len(img))
+        """This will be model specific """
+        pass
+    
 
     def eval_epoch(self, data_loader, prefix='test'):
         """Evaluates a model for one epoch."""

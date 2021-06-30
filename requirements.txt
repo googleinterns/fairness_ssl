@@ -1,0 +1,13 @@
+absl-py
+googledrivedownloader
+opencv-python
+tqdm
+tensorflow
+tensorflow_datasets
+tensorboard
+torch
+torchvision
+pytorch_model_summary
+kornia
+easydict
+scikit-learn

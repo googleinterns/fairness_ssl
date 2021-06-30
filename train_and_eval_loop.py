@@ -39,11 +39,17 @@ flags.DEFINE_float(name='weight_decay', default=0.00001,
                    help='L2 weight decay.')
 flags.DEFINE_boolean(name='resume', default=True,
                      help='resume training from checkpoint if true.')
-flags.DEFINE_integer(name='batch_size', default=10, help='batch size.')
+flags.DEFINE_integer(name='batch_size', default=64, help='batch size.')
 flags.DEFINE_integer(name='num_epoch', default=100, help='number of epoch.')
 
 # Misc.
 flags.DEFINE_string(name='ckpt_prefix', default='results',
+                    help='path to checkpoint.')
+flags.DEFINE_string(name='ckpt_path', default='',
+                    help='path to save model.')
+
+# Debug mode.
+flags.DEFINE_string(name='pt_prefix', default='results',
                     help='path to checkpoint.')
 flags.DEFINE_string(name='ckpt_path', default='',
                     help='path to save model.')

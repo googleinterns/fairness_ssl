@@ -249,14 +249,14 @@ class BaseTrain(object):
         print(f'[{self.epoch}/{self.hp.num_epoch}] {t: <7} (train) {self.train_time: .2f} (min) (eval) {self.eval_time: .2f} (min)')
         for p in ['train', 'val', 'test']:
             string_to_print = f'[{self.epoch}/{self.hp.num_epoch}] {p: <7}'
-            for m in ['acc', 'worstacc', 'auc', 'worstauc']:
+            for m in ['acc']:
                 score = self.metrics[f'{p}.{m}'] / self.metrics[f'{p}.batch']
                 string_to_print += f' {m} {score:.4f}'
             print(string_to_print)
 
         # Tensorboards.
         for p in ['train', 'val', 'test']:
-            for m in ['acc', 'worstacc', 'auc', 'worstauc']:
+            for m in ['acc']:
                 score = self.metrics[f'{p}.{m}'] / self.metrics[f'{p}.batch']
                 self.writer.add_scalar(f'{p}/{m}', score, self.epoch)
 

@@ -11,3 +11,4 @@ pytorch_model_summary
 kornia
 easydict
 scikit-learn
+pandas

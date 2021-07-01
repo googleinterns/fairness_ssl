@@ -87,7 +87,6 @@ def main(unused_argv):
 
     # Run the training routine
     trainer.get_config()
-    pdb.set_trace()
     trainer.train()
 
 

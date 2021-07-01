@@ -15,7 +15,7 @@ from pytorch_model_summary import summary
 
 from data.tabular import Tabular
 
-from model.nnet import NNet
+from model.fullyconn import FullyConnected
 
 from util.utils import HParams
 #, get_accuracy, linearDecay
@@ -26,9 +26,9 @@ class BaseTrain(object):
     def __init__(self, hparams):
         self.hp = hparams
         self.dataset_name = hparams.dataset
-        self.get_ckpt_path_suffix() # sets self.file_suffix
 
         # Set file path to save.
+        self.get_ckpt_path_suffix() # sets self.file_suffix        
         self.get_ckpt_path() # 
         self.set_ckpt_path() # sets self.ckpt_path, self.tb_path, self.stat_path
 
@@ -55,12 +55,11 @@ class BaseTrain(object):
     def get_model(self, input_dim):
         """Gets model."""
 
-        if self.hp.model_type == 'nnet':
-            model = NNet(n_classes=2)
+        if self.hp.model_type == 'fullyconn':
+            model = FullyConnected(input_dim=input_dim, latent_dim=self.hp.latent_dim)
 
         # Print model summary.
-        # TODO(lokhandevishnu:) Adjust summary 
-        #print(summary(model, input_dim, show_input=False))
+        print(summary(model, input_dim, show_input=False))
 
         # Cast to CUDA if GPUs are available.
         if torch.cuda.is_available():
@@ -202,24 +201,34 @@ class BaseTrain(object):
         self.scheduler = self.get_scheduler(self.optimizer)
 
     def get_metrics(self):
-        """Gets metrics."""
-        self.metrics = {'train.loss': 0.0,
-                        'train.batch': 0.0,
-                        'train.acc': 0.0,
-                        'train.worstacc': 0.0,
-                        'train.auc': 0.0,
-                        'train.worstauc': 0.0
-                        'val.batch': 0.0,
-                        'val.acc': 0.0,
-                        'val.worstacc': 0.0,
-                        'val.auc': 0.0,
-                        'val.worstauc': 0.0,
-                        'test.batch': 0.0,
-                        'test.acc': 0.0,
-                        'test.worstacc': 0.0,
-                        'test.auc': 0.0,
-                        'test.worstauc': 0.0
-                        }
+        """Gets metrics.
+        Note: Each metric computes sum total over the samples in the batch
+        """
+        
+        self.metrics = {
+            'train.loss': 0.0,
+            'train.batch': 0.0,
+            'train.acc': 0.0,
+            'train.acc_c0': 0.0,
+            'train.acc_c1': 0.0,                        
+            'train.auc': 0.0,
+            'train.auc_c0': 0.0,
+            'train.auc_c1': 0.0,
+            'val.batch': 0.0,
+            'val.acc': 0.0,
+            'val.acc_c0': 0.0,
+            'val.acc_c1': 0.0,                        
+            'val.auc': 0.0,
+            'val.auc_c0': 0.0,
+            'val.auc_c1': 0.0,                        
+            'test.batch': 0.0,
+            'test.acc': 0.0,
+            'test.acc_c0': 0.0,
+            'test.acc_c1': 0.0,                        
+            'test.auc': 0.0,
+            'test.auc_c0': 0.0,
+            'test.auc_c1': 0.0                        
+        }
 
     def reset_metrics(self, prefix=''):
         """Note. Function cannot be called independently"""

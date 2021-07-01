@@ -20,8 +20,11 @@ flags.DEFINE_enum(name='dataset', default='Adult',
 flags.DEFINE_integer(name='dataseed', default=0,
                      help='random seed for dataset construction.')
 # Model.
-flags.DEFINE_enum(name='model_type', default='nnet',
-                  enum_values=['nnet'], help='model type.')
+flags.DEFINE_enum(name='model_type', default='fullyconn',
+                  enum_values=['fullyconn', 'resnet'], help='model type.')
+flags.DEFINE_integer(name='latent_dim', default=64,
+                     help='latent dims for fully connected network')
+
 # Optimization.
 flags.DEFINE_enum(name='method', default='supervised',
                   enum_values=['supervised', 'suprawlsian'],
@@ -49,10 +52,7 @@ flags.DEFINE_string(name='ckpt_path', default='',
                     help='path to save model.')
 
 # Debug mode.
-flags.DEFINE_string(name='pt_prefix', default='results',
-                    help='path to checkpoint.')
-flags.DEFINE_string(name='ckpt_path', default='',
-                    help='path to save model.')
+#parser.add_argument('--flag_debug', default=False, action='store_true', help='debug flag'))
 
 # Semi-supervised.
 flags.DEFINE_float(name='threshold', default=0.0,

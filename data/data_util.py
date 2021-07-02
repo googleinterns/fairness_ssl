@@ -140,10 +140,7 @@ def process_adult_data():
   train_control = train_control.loc[:cutoff,:]
 
   # Normalize the Training dataset
-  maxes = np.maximum(np.maximum(\
-    train_data.max(axis=0),\
-    val_data.max(axis=0)),\
-    test_data.max(axis=0))
+  maxes = train_data.max(axis=0)
 
   train_data = train_data / maxes
   test_data = test_data / maxes

@@ -1,0 +1,26 @@
+.ipynb_checkpoints
+.DS_Store
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Distribution / packaging
+.Python
+env/
+
+# Data files
+**/datasets
+
+# TensorBoard
+*events.out.tfevents*
+
+# Notebook
+.ipynb_checkpoints/
+
+# File Extension
+*.ckpt*
+*.zip
+*.7z
+*.pyc
+

@@ -1,0 +1,11 @@
+absl-py
+tqdm
+tensorflow
+tensorflow_datasets
+tensorboard
+torch
+torchvision
+pytorch_model_summary
+easydict
+scikit-learn
+pandas

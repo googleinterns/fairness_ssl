@@ -68,7 +68,7 @@ def maybe_download_german(filename):
 
 
 def process_adult_data():
-  """ Process the entries of Adult dataset. Creates the training, 
+  """Process the entries of Adult dataset. Creates the training, 
   validation and test splits. 
 
   Target Variable: income
@@ -82,11 +82,11 @@ def process_adult_data():
                            "capital-loss", "hours-per-week", "native-country",\
                            "income" ]
   train_data = pd.read_table(\
-    os.path.join(DATA_DIRECTORY + "raw","adult.data"),\
+    os.path.join(DATA_DIRECTORY + "raw", "adult.data"),\
     delimiter=", ", header=None, names=ADULT_ALL_COL_NAMES,
     na_values="?",keep_default_na=False)
   test_data = pd.read_table(\
-    os.path.join(DATA_DIRECTORY + "raw","adult.test"),\
+    os.path.join(DATA_DIRECTORY + "raw", "adult.test"),\
     delimiter=", ", header=None, names=ADULT_ALL_COL_NAMES,
     na_values="?",keep_default_na=False, skiprows=1)
 
@@ -155,7 +155,7 @@ def process_adult_data():
 
 
 def process_german_data():
-  """ Process the entries of German dataset. Creates the training, 
+  """Process the entries of German dataset. Creates the training, 
   validation and test splits. 
 
   Target Variable: cr_good_bad
@@ -171,7 +171,7 @@ def process_german_data():
                           "credits_at_bank", "job", "liable_persons", \
                           "phone", "foreign", "cr_good_bad"]
   all_data = pd.read_table(\
-    os.path.join(DATA_DIRECTORY + "raw","german.data"),\
+    os.path.join(DATA_DIRECTORY + "raw", "german.data"),\
     delimiter=" ", header=None, names=GERMAN_ALL_COL_NAMES,
     na_values="?",keep_default_na=False)
 
@@ -248,18 +248,16 @@ class ArrayFromMemory(torch.utils.data.Dataset):
     self.control = control
     
   def __len__(self):
-    """ torch.utils.Dataset function
-      
-      Returns:
-      Size of the dataset
+    """torch.utils.Dataset function
+       Returns:
+       Size of the dataset
     """
     return self.data.shape[0]
 
   def __getitem__(self, index):
-    """ torch.utils.Dataset function
-      
-    Returns:
-    Item at a specific index
+    """torch.utils.Dataset function
+       Returns:
+       Item at a specific index
     """
     x = self.data[index, :].astype(float)
     y = int(self.target[index])

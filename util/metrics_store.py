@@ -5,8 +5,7 @@ import pdb
 EPS = 0.0001
 
 class MetricsEval(object):
-    """ A class to evaluate different metrics.
-    """
+    """A class to evaluate different metrics."""
     
     def __init__(self, y_pred_logits, y_true, c):
 

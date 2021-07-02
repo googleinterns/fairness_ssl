@@ -11,7 +11,7 @@ class FullyConnected(nn.Module):
     """
     A simple four layered neural network predicting the target attributes
     """
-    def __init__(self, name='fullyconnected', input_dim=121, latent_dim=64):
+    def __init__(self, input_dim=121, latent_dim=64):
         super(FullyConnected, self).__init__()
         
         self.name = name

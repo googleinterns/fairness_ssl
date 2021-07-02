@@ -39,7 +39,7 @@ class BaseTrain(object):
     def get_dataset(self):
         """Gets dataset."""
 
-        if self.dataset_name == 'German' or self.dataset_name == 'Adult':
+        if self.dataset_name in ['German', 'Adult']:
             return Tabular(self.dataset_name)
         else:
             raise ValueError('Dataset not supported.')
@@ -48,7 +48,7 @@ class BaseTrain(object):
         """Gets data loader."""
         dl = self.get_dataset()
         train_loader, val_loader,\
-            test_loader = dl.load_dataset(batch_size = self.hp.batch_size)
+            test_loader = dl.load_dataset(batch_size=self.hp.batch_size)
 
         return train_loader, val_loader, test_loader, dl
 

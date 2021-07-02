@@ -34,9 +34,11 @@ class Tabular(object):
     """
 
     # Download data if unavailable
-    data_util.maybe_download(adult_flag = True, german_flag = True)
+    data_util.maybe_download(adult_flag=True, german_flag=True)
 
     # Load the dataset
+    #TODO: Single function for process tabular data
+    
     if dataset_name == 'Adult':
       train_data, train_target, train_control,\
         valid_data, valid_target, valid_control,\

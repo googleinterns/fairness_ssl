@@ -14,7 +14,6 @@ class FullyConnected(nn.Module):
     def __init__(self, input_dim=121, latent_dim=64):
         super(FullyConnected, self).__init__()
         
-        self.name = name
         self.latent_dim = latent_dim
         
         # Encoder layers

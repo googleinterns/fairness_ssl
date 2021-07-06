@@ -24,6 +24,10 @@ flags.DEFINE_enum(name='model_type', default='fullyconn',
                   enum_values=['fullyconn', 'resnet'], help='model type.')
 flags.DEFINE_integer(name='latent_dim', default=64,
                      help='latent dims for fully connected network')
+flags.DEFINE_enum(name='use_gpu', default='True',
+                  enum_values=['True', 'False'], help='To use GPU or not')
+flags.DEFINE_enum(name='save_checkpoint', default='True',
+                  enum_values=['True', 'False'], help='To save checkpoints or not')
 
 # Optimization.
 flags.DEFINE_enum(name='method', default='supervised',

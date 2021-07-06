@@ -29,7 +29,7 @@ class Supervised(BaseTrain):
         #print(summary(model, input_dim, show_input=False))
 
         # Cast to CUDA if GPUs are available.
-        if torch.cuda.is_available():
+        if self.hp.use_gpu is 'True' and torch.cuda.is_available():
             print('cuda device count: ', torch.cuda.device_count())
             model = torch.nn.DataParallel(model)
             model = model.cuda()
@@ -42,7 +42,7 @@ class Supervised(BaseTrain):
         x = batch[0].float()
         y = batch[1].long()
         c = batch[2].long()
-        if torch.cuda.is_available():
+        if self.hp.use_gpu is 'True' and torch.cuda.is_available():
             x = x.cuda()
             y = y.cuda()
             c = c.cuda()
@@ -76,7 +76,7 @@ class Supervised(BaseTrain):
         x = batch[0].float()
         y = batch[1].float()
         c = batch[2].float()
-        if torch.cuda.is_available():
+        if self.hp.use_gpu is 'True' and torch.cuda.is_available():
             x = x.cuda()
             y = y.cuda()
             c = c.cuda()

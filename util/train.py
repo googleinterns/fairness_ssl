@@ -13,12 +13,16 @@ from torch.utils.data import DataLoader, random_split
 from torch.utils.tensorboard import SummaryWriter
 from pytorch_model_summary import summary
 
+import pdb
+
 from data.tabular import Tabular
 
 from model.fullyconn import FullyConnected
 
 from util.utils import HParams
 #, get_accuracy, linearDecay
+
+import tensorflow as tf
 
 class BaseTrain(object):
     """Base model trainer."""
@@ -62,7 +66,7 @@ class BaseTrain(object):
         print(summary(model, input_dim, show_input=False))
 
         # Cast to CUDA if GPUs are available.
-        if torch.cuda.is_available():
+        if self.hp.use_gpu is 'True' and torch.cuda.is_available():
             print('cuda device count: ', torch.cuda.device_count())
             model = torch.nn.DataParallel(model)
             model = model.cuda()
@@ -129,6 +133,8 @@ class BaseTrain(object):
     def save_checkpoint(self, suffix='ckpt'):
         """Saves model checkpoint."""
         """Note. Function cannot be called independently"""
+        if self.hp.save_checkpoint is 'False' :
+            return
         
         ckpt_name = os.path.join(self.ckpt_path, f'{suffix}.pth')
         state = {
@@ -268,7 +274,7 @@ class BaseTrain(object):
         event_files.sort(key=lambda filename: tf.io.gfile.stat(filename).mtime_nsec)
         event_dict = {}
         for p in ['train', 'val', 'test']:
-            for m in ['dice', 'iou', 'acc']:
+            for m in ['acc']:
                 event_dict[f'{p}.{m}'] = []
         for event_file in event_files:
             for event in tf.compat.v1.train.summary_iterator(event_file):
@@ -292,7 +298,7 @@ class BaseTrain(object):
 
         start_epoch = self.train_begin() # calls get_metrics(), get_ckpt
         for epoch in range(start_epoch, self.hp.num_epoch):
-            self.train_epoch_begin() # calls reset_metrics(), train_tim
+            self.train_epoch_begin() # calls reset_metrics(), train_time
             self.train_epoch(self.train_loader) # calls train_step
             self.train_epoch_end() # calls eval_epoch, scheduler, monitor, save_checkpoint
         self.train_end() # calls save_checkpoint, dump_stats_to_json

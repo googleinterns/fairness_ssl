@@ -48,11 +48,10 @@ class Supervised(BaseTrain):
             c = c.cuda()
 
         # Compute loss 
-        pred_logit = self.model(x)
-        loss = F.cross_entropy(pred_logit, y)
-
-        # Compute per-group accuracy, area under the curve
-        acc, acc_c0, acc_c1, auc, auc_c0, auc_c1 = (0., 0., 0., 0., 0., 0.)#MetricsEval(pred_logit, y, c)
+        y_logit = self.model(x)
+        y_pred = torch.argmax(y_logit, 1)
+        
+        loss = F.cross_entropy(y_logit, y)
 
         # Compute gradient.
         self.optimizer.zero_grad()
@@ -60,15 +59,24 @@ class Supervised(BaseTrain):
         self.optimizer.step()
 
         # Update metrics.
-        #TODO: Write the case for more than two sensitive attribtues
-        self.metrics['train.loss'] += (loss * len(x))
-        self.metrics['train.batch'] += len(x)
-        self.metrics['train.acc'] += (acc * len(x))
-        self.metrics['train.acc_c0'] += (acc_c0 * len(x))
-        self.metrics['train.acc_c1'] += (acc_c1 * len(x))        
-        self.metrics['train.auc'] += (auc * len(x))
-        self.metrics['train.auc_c0'] += (auc_c0 * len(x))
-        self.metrics['train.auc_c1'] += (auc_c1 * len(x))        
+        # Maintains running average over all the metrics
+        for cid in range(-1, self.dset.n_controls):
+            bsize = len(c) if cid == -1 else len(c == cid)
+            select = c != None if cid == -1 else c == cid
+            
+            self.metrics_dict[f'train.loss.{cid}'] = \
+                (MetricsEval().cross_entropy(y_logit, y, select) * bsize + self.metrics_dict[f'train.loss.{cid}'] * self.metric_dict[f'train.size.{cid}']) / (bsize + self.metric_dict[f'train.size.{cid}'])
+            
+            self.metrics_dict[f'train.acc.{cid}'] = \
+                (MetricsEval().accuracy(y_pred, y, select) * bsize + self.metrics_dict[f'train.acc.{cid}'] * self.metric_dict[f'train.size.{cid}']) / (bsize + self.metric_dict[f'train.size.{cid}'])
+
+            self.metrics_dict[f'train.y_score.{cid}'] = \
+                np.concatenate((self.metric_dict['train.y_score.{cid}'], MetricsEval().logit2prob(y_logit[select])))
+            self.metrics_dict[f'train.y_true.{cid}'] = \
+                np.concatenate((self.metric_dict['train.y_true.{cid}'], y[select]))
+
+            self.metrics_dict[f'train.size.{cid}'] += bsize
+                               
 
     def eval_step(self, batch, prefix='test'):
         """Trains a model for one step."""
@@ -83,16 +91,24 @@ class Supervised(BaseTrain):
 
         # Compute loss
         with torch.no_grad():
-            pred_logit = self.model(x)
+            y_logit = self.model(x)
 
-        # Compute per-group accuracy, area under the curve
-        acc, acc_c0, acc_c1, auc, auc_c0, auc_c1 = (0., 0., 0., 0., 0., 0.)#MetricsEval(pred_logit, y, c)
+        for cid in range(-1, self.dset.n_controls):
+            bsize = len(c) if cid == -1 else len(c == cid)
 
-        # Update metrics.
-        #TODO: Write the case for more than two sensitive attribtues
-                # Update metrics.
-        self.metrics[f'{prefix}.batch'] += len(x)
-        self.metrics[f'{prefix}.acc'] += (acc * len(x))
+            self.metrics_dict[f'{prefix}.loss.{cid}'] = \
+                (MetricsEval().cross_entropy(y_logit, y_true, cid) * bsize + self.metrics_dict[f'{prefix}.loss.{cid}'] * self.metric_dict[f'{prefix}.size.{cid}']) / (bsize + self.metric_dict[f'{prefix}.size.{cid}'])
+            
+            self.metrics_dict[f'{prefix}.acc.{cid}'] = \
+                (MetricsEval().accuracy(y_pred, y_true, cid) * bsize + self.metrics_dict[f'{prefix}.acc.{cid}'] * self.metric_dict[f'{prefix}.size.{cid}']) / (bsize + self.metric_dict[f'{prefix}.size.{cid}'])
+
+            self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
+                np.concatenate((self.metric_dict['{prefix}.y_score.{cid}'], MetricsEval().logit2prob(y_logit, cid)))
+            self.metrics_dict[f'{prefix}.y_true.{cid}'] = \
+                np.concatenate((self.metric_dict['{prefix}.y_true.{cid}'], y if cid == -1 else y[c == cid])
+
+            self.metrics_dict[f'{prefix}.size.{cid}'] += bsize
+                               
 
 if __name__ == '__main__':
     trainer = Supervised(hparams=HParams({'dataset': 'Adult',

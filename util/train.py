@@ -50,11 +50,11 @@ class BaseTrain(object):
 
     def get_dataloader(self):
         """Gets data loader."""
-        dl = self.get_dataset()
+        dset = self.get_dataset()
         train_loader, val_loader,\
-            test_loader = dl.load_dataset(batch_size=self.hp.batch_size)
+            test_loader = dset.load_dataset(batch_size=self.hp.batch_size)
 
-        return train_loader, val_loader, test_loader, dl
+        return train_loader, val_loader, test_loader, dset
 
     def get_model(self, input_dim):
         """Gets model."""
@@ -195,10 +195,10 @@ class BaseTrain(object):
 
         # Data loader.
         self.train_loader, self.val_loader, \
-            self.test_loader, self.dl = self.get_dataloader()
+            self.test_loader, self.dset = self.get_dataloader()
 
         # Model architecture (using DataParallel).
-        dummy_x, _, _ = self.dl.train_set.__getitem__(0)
+        dummy_x, _, _ = self.dset.train_set.__getitem__(0)
         input_dim = dummy_x.size(0)
         self.model = self.get_model(input_dim)
 
@@ -206,45 +206,27 @@ class BaseTrain(object):
         self.optimizer = self.get_optimizer(self.model.parameters())
         self.scheduler = self.get_scheduler(self.optimizer)
 
-    def get_metrics(self):
+    def create_metrics_dict(self):
         """Gets metrics.
         Note: Each metric computes sum total over the samples in the batch
         """
-        
-        self.metrics = {
-            'train.loss': 0.0,
-            'train.batch': 0.0,
-            'train.acc': 0.0,
-            'train.acc_c0': 0.0,
-            'train.acc_c1': 0.0,                        
-            'train.auc': 0.0,
-            'train.auc_c0': 0.0,
-            'train.auc_c1': 0.0,
-            'val.batch': 0.0,
-            'val.acc': 0.0,
-            'val.acc_c0': 0.0,
-            'val.acc_c1': 0.0,                        
-            'val.auc': 0.0,
-            'val.auc_c0': 0.0,
-            'val.auc_c1': 0.0,                        
-            'test.batch': 0.0,
-            'test.acc': 0.0,
-            'test.acc_c0': 0.0,
-            'test.acc_c1': 0.0,                        
-            'test.auc': 0.0,
-            'test.auc_c0': 0.0,
-            'test.auc_c1': 0.0                        
-        }
+        n_controls = self.dset.n_controls
+        self.metrics_dict = {}
 
-    def reset_metrics(self, prefix=''):
+        for prefix in ['train', 'val', 'test']:
+            for measure in MetricsEval().get_allmeasures():
+                for control in range(-1, n_controls):
+                    self.metrics_dict[f'{prefix}.{measure}.{control}'] = 0.0
+
+    def reset_metrics_dict(self, prefix=''):
         """Note. Function cannot be called independently"""
         
-        for key in self.metrics:
+        for key in self.metrics_dict:
             if key.startswith(prefix):
-                if isinstance(self.metrics[key], float):
-                    self.metrics[key] = 0.0
-                elif isinstance(self.metrics[key], list):
-                    self.metrics[key] = []
+                if isinstance(self.metrics_dict[key], float):
+                    self.metrics_dict[key] = 0.0
+                elif isinstance(self.metrics_dict[key], list):
+                    self.metrics_dict[key] = []
 
     def monitor(self):
         """Prints monitoring variables."""
@@ -296,10 +278,10 @@ class BaseTrain(object):
     def train(self):
         """Trains a model."""
 
-        start_epoch = self.train_begin() # calls get_metrics(), get_ckpt
+        start_epoch = self.train_begin() # calls create_metrics_dict(), get_ckpt
         for epoch in range(start_epoch, self.hp.num_epoch):
-            self.train_epoch_begin() # calls reset_metrics(), train_time
-            self.train_epoch(self.train_loader) # calls train_step
+            self.train_epoch_begin() # calls reset_metrics_dict(), train_time
+            self.train_epoch() # calls train_step
             self.train_epoch_end() # calls eval_epoch, scheduler, monitor, save_checkpoint
         self.train_end() # calls save_checkpoint, dump_stats_to_json
 
@@ -307,7 +289,7 @@ class BaseTrain(object):
         """Calls at the beginning of the training."""
 
         # Get metrics.
-        self.get_metrics()
+        self.create_metrics_dict()
 
         # Load from checkpoint when exists.
         start_epoch = self.get_ckpt()
@@ -321,12 +303,12 @@ class BaseTrain(object):
         self.save_checkpoint('last')
         self.dump_stats_to_json()
 
-    def train_epoch(self, train_loader):
+    def train_epoch(self):
         """Trains a model for one epoch."""
         """Note: Should be called only after get_config"""
 
         self.model.train()
-        for batch in train_loader:
+        for batch in self.train_loader:
             self.train_step(batch)
 
     def train_epoch_begin(self):
@@ -334,7 +316,7 @@ class BaseTrain(object):
         """Note: Should be called only after get_config"""
         """Requires self.metrics to be defined"""
         
-        self.reset_metrics(prefix='train')
+        self.reset_metrics_dict(prefix='train')
         self.train_time = time.time()
 
     def train_epoch_end(self):
@@ -363,7 +345,7 @@ class BaseTrain(object):
         """Requires self.metrics to be defined"""
         
         self.model.eval()
-        self.reset_metrics(prefix=prefix)
+        self.reset_metrics_dict(prefix=prefix)
         for batch in data_loader:
             self.eval_step(batch, prefix=prefix)
 

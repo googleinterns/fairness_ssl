@@ -5,6 +5,9 @@
 
 
 Todo-
-1. (lokhandevishnu:) Fix for independent functions in train.py code
-3. (lokhandevishnu:) Directory naming, debug and normal
-4. (lokhandevishnu:) Change metrrcs to loss_logger
+. (lokhandevishnu:) Fix for independent functions in train.py code
+. (lokhandevishnu:) Directory naming
+. (lokhandevishnu:) debug and normal modes
+. (lokhandevishnu:) train_begin/train_epoch_begin are confusing. Need to resolve.
+. (lokhandevishnu:) set as public and private methods
+. (lokhandevishnu:) Change metrrcs to loss_logger

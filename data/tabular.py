@@ -9,6 +9,8 @@ import torch
 from torch.utils.data import Dataset
 
 from data import data_util
+
+import pdb
     
 class Tabular(object):
   """Tabular data loader."""
@@ -16,6 +18,7 @@ class Tabular(object):
   def __init__(self, dataset_name='Adult'):
     print('Using ', dataset_name)
     self.dataset_name = dataset_name
+
     self.load_raw_data(dataset_name=dataset_name)
 
     # Create Torch Custom Datasets
@@ -28,6 +31,10 @@ class Tabular(object):
     self.test_set = data_util.ArrayFromMemory(data=self.x_test, \
                                           target=self.y_test, \
                                           control=self.c_test)
+
+    # Class counts
+    self.n_targets = len(np.unique(self.y_train))
+    self.n_controls = len(np.unique(self.c_train))    
 
   def load_raw_data(self, dataset_name='Adult'):
     """Load raw tabular data.

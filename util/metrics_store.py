@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+from sklearn.metrics import roc_auc_score
 
 import pdb
 
@@ -27,6 +28,9 @@ class MetricsEval(object):
     def accuracy(self, y_pred, y_true, select):
         acc = torch.sum(y_pred[select] == y_true[select]) / y_pred[select].size(0)
         return acc.item()
+
+    def roc_auc(self, y_score, y_true):
+        return roc_auc_score(y_true, y_score)
 
     def logit2prob(self, logits):
         logits = logits - torch.max(logits, 1)[0].unsqueeze(1)

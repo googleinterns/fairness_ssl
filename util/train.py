@@ -20,7 +20,8 @@ from data.tabular import Tabular
 from model.fullyconn import FullyConnected
 
 from util.utils import HParams
-#, get_accuracy, linearDecay
+
+from util.metrics_store import MetricsEval
 
 import tensorflow as tf
 
@@ -66,7 +67,7 @@ class BaseTrain(object):
         print(summary(model, input_dim, show_input=False))
 
         # Cast to CUDA if GPUs are available.
-        if self.hp.use_gpu is 'True' and torch.cuda.is_available():
+        if self.hp.use_gpu == 'True' and torch.cuda.is_available():
             print('cuda device count: ', torch.cuda.device_count())
             model = torch.nn.DataParallel(model)
             model = model.cuda()
@@ -133,7 +134,7 @@ class BaseTrain(object):
     def save_checkpoint(self, suffix='ckpt'):
         """Saves model checkpoint."""
         """Note. Function cannot be called independently"""
-        if self.hp.save_checkpoint is 'False' :
+        if self.hp.save_checkpoint == 'False' :
             return
         
         ckpt_name = os.path.join(self.ckpt_path, f'{suffix}.pth')
@@ -214,10 +215,13 @@ class BaseTrain(object):
         self.metrics_dict = {}
 
         for prefix in ['train', 'val', 'test']:
-            for measure in MetricsEval().get_allmeasures():
-                for control in range(-1, n_controls):
+            for control in range(-1, n_controls):
+                for measure in ['loss', 'size', 'acc']:
                     self.metrics_dict[f'{prefix}.{measure}.{control}'] = 0.0
+                for measure in ['y_score', 'y_true']:
+                    self.metrics_dict[f'{prefix}.{measure}.{control}'] = []
 
+                    
     def reset_metrics_dict(self, prefix=''):
         """Note. Function cannot be called independently"""
         
@@ -237,44 +241,37 @@ class BaseTrain(object):
         print(f'[{self.epoch}/{self.hp.num_epoch}] {t: <7} (train) {self.train_time: .2f} (min) (eval) {self.eval_time: .2f} (min)')
         for p in ['train', 'val', 'test']:
             string_to_print = f'[{self.epoch}/{self.hp.num_epoch}] {p: <7}'
-            for m in ['acc']:
-                score = self.metrics[f'{p}.{m}'] / self.metrics[f'{p}.batch']
-                string_to_print += f' {m} {score:.4f}'
+            for cid in range(-1, self.dset.n_controls):
+                m = 'acc'
+                score = self.metrics_dict[f'{p}.{m}.{cid}']
+                string_to_print += f' {m} group{cid} {score:.4f}'
+
+                m = 'auc'
+                score = MetricsEval().roc_auc(self.metrics_dict[f'{p}.y_score.{cid}'],\
+                                              self.metrics_dict[f'{p}.y_true.{cid}'])
+                string_to_print += f' {m} group{cid} {score:.4f}'
+                
             print(string_to_print)
 
         # Tensorboards.
         for p in ['train', 'val', 'test']:
-            for m in ['acc']:
-                score = self.metrics[f'{p}.{m}'] / self.metrics[f'{p}.batch']
-                self.writer.add_scalar(f'{p}/{m}', score, self.epoch)
-
+            for cid in range(-1, self.dset.n_controls):
+                m = 'acc'
+                score = self.metrics_dict[f'{p}.{m}.{cid}'] 
+                self.writer.add_scalar(f'{p}/{m}.{cid}', score, self.epoch)
+                
+                m = 'auc'
+                score = MetricsEval().roc_auc(self.metrics_dict[f'{p}.y_score.{cid}'],\
+                                              self.metrics_dict[f'{p}.y_true.{cid}'])
+                self.writer.add_scalar(f'{p}/{m}.{cid}', score, self.epoch)                
+                
     def dump_stats_to_json(self):
-        """Dumps metrics to json."""
-
-        logdir = self.tb_path
-        event_files = list(tf.io.gfile.glob(os.path.join(logdir, '*')))
-        event_files.sort(key=lambda filename: tf.io.gfile.stat(filename).mtime_nsec)
-        event_dict = {}
-        for p in ['train', 'val', 'test']:
-            for m in ['acc']:
-                event_dict[f'{p}.{m}'] = []
-        for event_file in event_files:
-            for event in tf.compat.v1.train.summary_iterator(event_file):
-                for v in event.summary.value:
-                    if v.tag.replace('/', '.') in event_dict:
-                        event_dict[v.tag.replace('/', '.')].append(v.simple_value)
-        num_epoch_to_save = 20
-        event_dict = {
-            key: event_dict[key][-num_epoch_to_save:] for key in event_dict
-        }
-        for key in event_dict:
-            dict_to_write = {
-                'median (last%02d)' % x: np.median(event_dict[key][-x:]) for x in [1, 5, 10, num_epoch_to_save]
-            }
-            dict_to_write.update({'last%02d' % (num_epoch_to_save,): event_dict[key]})
-            with tf.io.gfile.GFile(os.path.join(self.stat_path, key + '.json'), 'w') as outfile:
-                json.dump(dict_to_write, outfile, sort_keys=True, indent=4)
-
+        """Dumps metrics to json.
+        todo: write json dump file
+        """
+        pass
+    
+        
     def train(self):
         """Trains a model."""
 

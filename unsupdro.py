@@ -27,11 +27,16 @@ class UnsupDRO(BaseTrain):
         super(UnsupDRO, self).get_config()
 
         # Additional hyperparameters.
-        self.eta = 0.9
+        self.unsupdro_eta = self.hp.unsupdro_eta
         self.relu = torch.nn.ReLU()
+
+    def get_ckpt_path(self):
+        super(UnsupDRO, self).get_ckpt_path()
+        params.extend(['unsupdro_eta', self.unsupdro_eta])
+        self.params_str = '_'.join([str(x) for x in params])
         
     def get_model(self, input_dim):
-        """Gets model."""
+        """Gets model. """
 
         if self.hp.model_type == 'fullyconn':
             model = FullyConnected(input_dim=input_dim, latent_dim=self.hp.latent_dim)
@@ -54,7 +59,7 @@ class UnsupDRO(BaseTrain):
         x = batch[0].float()
         y = batch[1].long()
         c = batch[2].long()
-        if self.hp.flag_usegpu == 'True' and torch.cuda.is_available():
+        if self.hp.flag_usegpu and torch.cuda.is_available():
             x = x.cuda()
             y = y.cuda()
             c = c.cuda()
@@ -65,7 +70,7 @@ class UnsupDRO(BaseTrain):
 
         # Calculating unsupervised dro
         loss = F.cross_entropy(y_logit, y, reduction='none')
-        loss_unsupdro = self.relu(loss - self.eta).mean()
+        loss_unsupdro = self.relu(loss - self.unsupdro_eta).mean()
         
         # Compute gradient.
         self.optimizer.zero_grad()
@@ -101,7 +106,7 @@ class UnsupDRO(BaseTrain):
         x = batch[0].float()
         y = batch[1].long()
         c = batch[2].long()
-        if self.hp.flag_usegpu is 'True' and torch.cuda.is_available():
+        if self.hp.flag_usegpu and torch.cuda.is_available():
             x = x.cuda()
             y = y.cuda()
             c = c.cuda()

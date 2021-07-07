@@ -58,11 +58,11 @@ flags.DEFINE_string(name='ckpt_path', default='',
 # Debug mode.
 #parser.add_argument('--flag_debug', default=False, action='store_true', help='debug flag'))
 
-# Semi-supervised.
-flags.DEFINE_float(name='threshold', default=0.0,
-                   help='confidence threshold.')
-flags.DEFINE_integer(name='warmup_epoch', default=0,
-                     help='warmup epoch for unsupervised loss.')
+# DRO hyper-params
+flags.DEFINE_float(name='groupdro_stepsize', default=0.01,
+                   help='soft penalty step size.')
+flags.DEFINE_float(name='unsupdro_eta', default=0.9,
+                   help='soft penalty step size.')
 
 
 FLAGS = flags.FLAGS

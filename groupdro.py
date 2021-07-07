@@ -22,13 +22,20 @@ class GroupDRO(BaseTrain):
 
     def __init__(self, hparams):
         super(GroupDRO, self).__init__(hparams)
+
+    def get_ckpt_path(self):
+        super(GroupDRO, self).get_ckpt_path()
+        new_params = ['_groupdro_stepsize', self.hp.groupdro_stepsize]
+        self.params_str += '_'.join([str(x) for x in new_params])
     
     def get_config(self):
         super(GroupDRO, self).get_config()
 
-        # Additional hyperparameters.
+        # Additional parameters
         self.weights = torch.ones(self.dset.n_controls)/self.dset.n_controls
-        self.groupdro_stepsize = 0.01
+        
+        # Additional hyperparameters.
+        self.groupdro_stepsize = self.hp.groupdro_stepsize
         
     def get_model(self, input_dim):
         """Gets model."""

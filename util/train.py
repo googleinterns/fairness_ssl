@@ -73,7 +73,7 @@ class BaseTrain(object):
         print(summary(model, input_dim, show_input=False))
 
         # Cast to CUDA if GPUs are available.
-        if self.hp.use_gpu == 'True' and torch.cuda.is_available():
+        if self.hp.flag_usegpu and torch.cuda.is_available():
             print('cuda device count: ', torch.cuda.device_count())
             model = torch.nn.DataParallel(model)
             model = model.cuda()
@@ -142,7 +142,7 @@ class BaseTrain(object):
     def save_checkpoint(self, suffix='ckpt', updatelog=True):
         """Saves model checkpoint."""
         """Note. Function cannot be called independently"""
-        if self.hp.save_checkpoint == 'False' or not updatelog :
+        if self.hp.flag_saveckpt == 'False' or not updatelog :
             return
         
         ckpt_name = os.path.join(self.ckpt_path, f'{suffix}.pth')
@@ -224,11 +224,12 @@ class BaseTrain(object):
 
     def create_metrics_dict(self):
         """Gets metrics.
-        Note: Each metric computes sum total over the samples in the batch
+
+        Each key in metrics_dict is of the kind f"{prefix}{measure}{control}". Here, prefix stands train/val/test. Measure is either loss/size/acc/y_score/y_true. Control stands for the sensitive group ID for which the measure is computed. When control is set to "-1" then the measure across all the samples is computed.
         """
         n_controls = self.dset.n_controls
         self.metrics_dict = {}
-
+        
         for prefix in ['train', 'val', 'test']:
             for control in range(-1, n_controls):
                 for measure in ['loss', 'size', 'acc']:

@@ -9,7 +9,7 @@ from absl import flags
 
 from supervised import Supervised
 from groupdro import GroupDRO
-#from unsupdro import UnsupDRO
+from unsupdro import UnsupDRO
 
 from util.utils import HParams
 

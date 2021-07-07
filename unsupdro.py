@@ -22,18 +22,19 @@ class UnsupDRO(BaseTrain):
 
     def __init__(self, hparams):
         super(UnsupDRO, self).__init__(hparams)
-    
+        print('UnsupDRO!')
+
+    def get_ckpt_path(self):
+        super(UnsupDRO, self).get_ckpt_path()
+        new_params = ['_unsupdro_eta', self.hp.unsupdro_eta]
+        self.params_str += '_'.join([str(x) for x in new_params])
+        
     def get_config(self):
         super(UnsupDRO, self).get_config()
 
         # Additional hyperparameters.
         self.unsupdro_eta = self.hp.unsupdro_eta
         self.relu = torch.nn.ReLU()
-
-    def get_ckpt_path(self):
-        super(UnsupDRO, self).get_ckpt_path()
-        params.extend(['unsupdro_eta', self.unsupdro_eta])
-        self.params_str = '_'.join([str(x) for x in params])
         
     def get_model(self, input_dim):
         """Gets model. """

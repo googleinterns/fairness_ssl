@@ -39,7 +39,7 @@ class BaseTrain(object):
         self.set_ckpt_path() # sets self.ckpt_path, self.tb_path, self.stat_path
 
         # Set the logpaths
-        self.logf=open(self.log_path, 'w')
+        self.logf = open(self.log_path, 'w')
         self.logf.write(self.params_str + '\n')
         self.logf.close()
         
@@ -334,7 +334,7 @@ class BaseTrain(object):
         """Requires self.metrics to be defined"""
         
         self.reset_metrics_dict(prefix='train')
-        self.logf=open(self.log_path, 'a+')
+        self.logf = open(self.log_path, 'a+')
         self.train_time = time.time()
 
     def train_epoch_end(self):

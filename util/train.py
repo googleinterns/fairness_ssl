@@ -142,7 +142,7 @@ class BaseTrain(object):
     def save_checkpoint(self, suffix='ckpt', updatelog=True):
         """Saves model checkpoint."""
         """Note. Function cannot be called independently"""
-        if self.hp.flag_saveckpt == 'False' or not updatelog :
+        if not self.hp.flag_saveckpt  or not updatelog :
             return
         
         ckpt_name = os.path.join(self.ckpt_path, f'{suffix}.pth')

@@ -69,7 +69,7 @@ class GroupDRO(BaseTrain):
         x = batch[0].float()
         y = batch[1].long()
         c = batch[2].long()
-        if self.hp.flag_usegpu == 'True' and torch.cuda.is_available():
+        if self.hp.flag_usegpu and torch.cuda.is_available():
             x = x.cuda()
             y = y.cuda()
             c = c.cuda()
@@ -116,7 +116,7 @@ class GroupDRO(BaseTrain):
         x = batch[0].float()
         y = batch[1].long()
         c = batch[2].long()
-        if self.hp.flag_usegpu is 'True' and torch.cuda.is_available():
+        if self.hp.flag_usegpu and torch.cuda.is_available():
             x = x.cuda()
             y = y.cuda()
             c = c.cuda()

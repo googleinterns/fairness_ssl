@@ -55,7 +55,7 @@ class GroupDRO(BaseTrain):
         return control_loss, control_count
 
     def calculate_groupdro_loss(self, control_loss, control_count):
-        self.weights = self.weights * torch.exp(self.groupdro_stepsize*control_loss)
+        self.weights = self.weights * torch.exp(self.groupdro_stepsize*control_loss.data)
         self.weights = self.weights/(self.weights.sum())
 
         loss_groupdro = control_loss @ self.weights
@@ -64,8 +64,6 @@ class GroupDRO(BaseTrain):
     
     def train_step(self, batch):
         """Trains a model for one step."""
-
-        print(self.weights)
         
         # Prepare data.
         x = batch[0].float()

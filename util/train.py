@@ -4,6 +4,7 @@ import os
 import time
 from tqdm import tqdm
 import json
+import datetime
 
 import numpy as np
 import torch
@@ -37,6 +38,11 @@ class BaseTrain(object):
         self.get_ckpt_path() # 
         self.set_ckpt_path() # sets self.ckpt_path, self.tb_path, self.stat_path
 
+        # Set the logpaths
+        self.logf=open(self.log_path, 'w')
+        self.logf.write(self.params_str + '\n')
+        self.logf.close()
+        
         # Set tensorboards.
         self.writer = SummaryWriter(log_dir=self.tb_path)
         
@@ -119,6 +125,8 @@ class BaseTrain(object):
     def get_ckpt(self):
         """Loads from checkpoint when exists."""
         """Note. Function cannot be called independently"""
+
+        # TODO: Save and load best val accuracy
         
         ckpt_name = os.path.join(self.ckpt_path, 'ckpt.pth')
         if self.hp.resume is True and os.path.exists(ckpt_name):
@@ -131,10 +139,10 @@ class BaseTrain(object):
             self.epoch = 0
         return self.epoch
 
-    def save_checkpoint(self, suffix='ckpt'):
+    def save_checkpoint(self, suffix='ckpt', updatelog=True):
         """Saves model checkpoint."""
         """Note. Function cannot be called independently"""
-        if self.hp.save_checkpoint == 'False' :
+        if self.hp.save_checkpoint == 'False' or not updatelog :
             return
         
         ckpt_name = os.path.join(self.ckpt_path, f'{suffix}.pth')
@@ -160,12 +168,18 @@ class BaseTrain(object):
         if self.hp.ckpt_path:
             ckpt_path = self.hp.ckpt_path
         else:
-            ckpt_path = os.path.join(f'{self.dataset_name}_fold{self.hp.dataseed}',
-                                    self.hp.model_type,
-                                    f'{self.__class__.__name__}_{self.hp.optimizer}_{self.hp.scheduler}' + \
-                                    f'_lr{self.hp.learning_rate}_wd{self.hp.weight_decay}_seed{self.hp.seed}' + \
-                                    f'_bs{self.hp.batch_size}_ep{self.hp.num_epoch}')
+            runTime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            ckpt_path = f'{self.dataset_name}_{self.__class__.__name__}_{runTime}'            
         self.ckpt_path = ckpt_path
+        params = ['dataset', self.dataset_name,
+                  'method', self.__class__.__name__,
+                  'optimizer', self.hp.optimizer,
+                  'learning_rate', self.hp.learning_rate,
+                  'batch_size', self.hp.batch_size,
+                  'seed', self.hp.seed,
+                  'latent_dim', self.hp.latent_dim]
+        self.params_str = '_'.join([str(x) for x in params])
+        
 
     def set_ckpt_path(self):
         """Sets file paths to save model, tensorboard, etc."""
@@ -176,6 +190,7 @@ class BaseTrain(object):
 
         # Set paths for saved model, tensorboard and eval stats.
         self.ckpt_path = os.path.join(self.hp.ckpt_prefix, self.ckpt_path)
+        self.log_path = os.path.join(self.ckpt_path, 'log.txt')
         self.tb_path = os.path.join(self.ckpt_path, 'tb')
         self.stat_path = os.path.join(self.ckpt_path, 'stat')
         print(self.ckpt_path)
@@ -232,15 +247,17 @@ class BaseTrain(object):
                 elif isinstance(self.metrics_dict[key], list):
                     self.metrics_dict[key] = []
 
-    def monitor(self):
+    def monitor(self, updatelog=True):
         """Prints monitoring variables."""
         """Note. Function cannot be called independently"""
         
         # Command line outputs.
         t = 'time'
-        print(f'[{self.epoch}/{self.hp.num_epoch}] {t: <7} (train) {self.train_time: .2f} (min) (eval) {self.eval_time: .2f} (min)')
+        message = f'[{self.epoch}/{self.hp.num_epoch}] {t: <7} (train) {self.train_time: .2f} (min) (eval) {self.eval_time: .2f} (min)'
+        print(message)
+        if updatelog: self.logf.write(message+'\n')
         for p in ['train', 'val', 'test']:
-            string_to_print = f'[{self.epoch}/{self.hp.num_epoch}] {p: <7}'
+            string_to_print = f'[{self.epoch}/{self.hp.num_epoch}] {p: <7} \n'
             for cid in range(-1, self.dset.n_controls):
                 m = 'acc'
                 score = self.metrics_dict[f'{p}.{m}.{cid}']
@@ -249,10 +266,11 @@ class BaseTrain(object):
                 m = 'auc'
                 score = MetricsEval().roc_auc(self.metrics_dict[f'{p}.y_score.{cid}'],\
                                               self.metrics_dict[f'{p}.y_true.{cid}'])
-                string_to_print += f' {m} group{cid} {score:.4f}'
+                string_to_print += f' {m} group{cid} {score:.4f} \n'
                 
             print(string_to_print)
-
+            if updatelog: self.logf.write(string_to_print+'\n')
+            
         # Tensorboards.
         for p in ['train', 'val', 'test']:
             for cid in range(-1, self.dset.n_controls):
@@ -290,7 +308,8 @@ class BaseTrain(object):
 
         # Load from checkpoint when exists.
         start_epoch = self.get_ckpt()
-
+        self.best_val_acc = 0.
+        
         return start_epoch
 
     def train_end(self):
@@ -314,6 +333,7 @@ class BaseTrain(object):
         """Requires self.metrics to be defined"""
         
         self.reset_metrics_dict(prefix='train')
+        self.logf=open(self.log_path, 'a+')
         self.train_time = time.time()
 
     def train_epoch_end(self):
@@ -322,13 +342,23 @@ class BaseTrain(object):
 
         self.train_time = (time.time() - self.train_time) / 60.0
         self.eval_time = time.time()
-        self.eval_epoch(self.val_loader, prefix='val')
-        self.eval_epoch(self.test_loader, prefix='test')
+
+        val_acc = self.eval_epoch(self.val_loader, prefix='val')
+        test_acc = self.eval_epoch(self.test_loader, prefix='test')
+
         self.eval_time = (time.time() - self.eval_time) / 60.0
         self.scheduler.step()
         self.epoch += 1
-        self.monitor()
-        self.save_checkpoint('ckpt')
+
+        if val_acc > self.best_val_acc:
+            self.best_val_acc = val_acc
+            updatelog = True
+        else:
+            updatelog = False
+        
+        self.monitor(updatelog)
+        self.save_checkpoint('ckpt', updatelog)
+        self.logf.close()
 
     def train_step(self, batch):
         """Trains a model for one step."""
@@ -345,6 +375,8 @@ class BaseTrain(object):
         self.reset_metrics_dict(prefix=prefix)
         for batch in data_loader:
             self.eval_step(batch, prefix=prefix)
+
+        return self.metrics_dict[f'{prefix}.acc.-1']
 
     def eval_step(self, batch, prefix='test'):
         """Evaluates a model for one step."""

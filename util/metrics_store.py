@@ -36,7 +36,7 @@ class MetricsEval(object):
         logits = logits - torch.max(logits, 1)[0].unsqueeze(1)
         logits = torch.exp(logits)
         prob = logits / logits.sum(dim=1).unsqueeze(1)
-        return prob[:, 1].detach().cpu().numpy()
+        return prob[:, 1].detach()
 
 if __name__ == '__main__':
     pass

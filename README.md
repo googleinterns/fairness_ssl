@@ -5,13 +5,15 @@
 
 
 Todo-
+
+
 . (lokhandevishnu:) Fix for independent functions in train.py code
 
 . (lokhandevishnu:) Directory naming
 
 . (lokhandevishnu:) select based on best_validation acc
 
-. (lokhandevishnu:) debug and normal modes
+. (lokhandevishnu:) debug and normal modes. rm and make dirs
 .
 . (lokhandevishnu:) train_begin/train_epoch_begin are confusing. Need to resolve.
 

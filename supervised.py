@@ -74,9 +74,9 @@ class Supervised(BaseTrain):
                 (MetricsEval().accuracy(y_pred, y, select) * bsize + self.metrics_dict[f'{prefix}.acc.{cid}'] * self.metrics_dict[f'{prefix}.size.{cid}']) / (bsize + self.metrics_dict[f'{prefix}.size.{cid}'])
 
             self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
-                np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'], MetricsEval().logit2prob(y_logit[select])))
+                np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'], MetricsEval().logit2prob(y_logit[select]).cpu().numpy()))
             self.metrics_dict[f'{prefix}.y_true.{cid}'] = \
-                np.concatenate((self.metrics_dict[f'{prefix}.y_true.{cid}'], y[select]))
+                np.concatenate((self.metrics_dict[f'{prefix}.y_true.{cid}'], y[select].cpu().numpy()))
 
             self.metrics_dict[f'{prefix}.size.{cid}'] += bsize
                                
@@ -109,9 +109,9 @@ class Supervised(BaseTrain):
                 (MetricsEval().accuracy(y_pred, y, select) * bsize + self.metrics_dict[f'{prefix}.acc.{cid}'] * self.metrics_dict[f'{prefix}.size.{cid}']) / (bsize + self.metrics_dict[f'{prefix}.size.{cid}'])
 
             self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
-                np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'], MetricsEval().logit2prob(y_logit[select])))
+                np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'], MetricsEval().logit2prob(y_logit[select]).cpu().numpy()))
             self.metrics_dict[f'{prefix}.y_true.{cid}'] = \
-                np.concatenate((self.metrics_dict[f'{prefix}.y_true.{cid}'], y[select]))
+                np.concatenate((self.metrics_dict[f'{prefix}.y_true.{cid}'], y[select].cpu().numpy()))
 
             self.metrics_dict[f'{prefix}.size.{cid}'] += bsize
 

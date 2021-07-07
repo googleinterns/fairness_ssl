@@ -8,6 +8,8 @@ from absl import app
 from absl import flags
 
 from supervised import Supervised
+from groupdro import GroupDRO
+#from unsupdro import UnsupDRO
 
 from util.utils import HParams
 
@@ -29,7 +31,7 @@ flags.DEFINE_bool(name='flag_saveckpt', default=True, help='To save checkpoints 
 
 # Optimization.
 flags.DEFINE_enum(name='method', default='supervised',
-                  enum_values=['supervised', 'suprawlsian'],
+                  enum_values=['supervised', 'groupdro', 'unsupdro'],
                   help='method.')
 flags.DEFINE_integer(name='seed', default=42, help='random seed for optimizer.')
 flags.DEFINE_enum(name='optimizer', default='Adam',
@@ -71,6 +73,10 @@ def get_trainer(hparams):
 
     if hparams.method == 'supervised':
         trainer = Supervised(hparams)
+    elif hparams.method == 'groupdro':
+        trainer = GroupDRO(hparams)
+    elif hparams.method == 'unsupdro':
+        trainer = UnsupDRO(hparams)
     else:
         raise NotImplementedError
 

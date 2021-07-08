@@ -138,7 +138,7 @@ class UnsupDRO(BaseTrain):
 
             
 if __name__ == '__main__':
-    trainer = GroupDRO(hparams=HParams({'dataset': 'Adult',
+    trainer = UnsupDRO(hparams=HParams({'dataset': 'Adult',
                                          'batch_size': 64,
                                          'model_type': 'fullyconn',
                                          'learning_rate': 0.0001,

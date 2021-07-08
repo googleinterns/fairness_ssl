@@ -67,7 +67,6 @@ class GroupDRO(BaseTrain):
 
         loss_groupdro = control_loss @ self.weights
         return loss_groupdro
-        
     
     def train_step(self, batch):
         """Trains a model for one step."""

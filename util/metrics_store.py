@@ -11,7 +11,7 @@ class MetricsEval(object):
         pass
 
     def get_allmeasures(self):
-        return ['loss', 'size', 'acc', 'y_score', 'y_true']
+        return ['loss', 'acc', 'y_score', 'y_true']
         
     def get_reduction(self, m, reduction='mean'):
         if reduction == 'mean':

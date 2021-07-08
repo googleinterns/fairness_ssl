@@ -7,7 +7,7 @@
 from absl import app
 from absl import flags
 
-from supervised import Supervised
+from erm import ERM
 from groupdro import GroupDRO
 from unsupdro import UnsupDRO
 
@@ -30,8 +30,8 @@ flags.DEFINE_bool(name='flag_usegpu', default=True, help='To use GPU or not')
 flags.DEFINE_bool(name='flag_saveckpt', default=True, help='To save checkpoints or not')
 
 # Optimization.
-flags.DEFINE_enum(name='method', default='supervised',
-                  enum_values=['supervised', 'groupdro', 'unsupdro'],
+flags.DEFINE_enum(name='method', default='erm',
+                  enum_values=['erm', 'groupdro', 'unsupdro'],
                   help='method.')
 flags.DEFINE_integer(name='seed', default=42, help='random seed for optimizer.')
 flags.DEFINE_enum(name='optimizer', default='Adam',
@@ -71,8 +71,8 @@ FLAGS = flags.FLAGS
 def get_trainer(hparams):
     """Gets trainer for the required method."""
 
-    if hparams.method == 'supervised':
-        trainer = Supervised(hparams)
+    if hparams.method == 'erm':
+        trainer = ERM(hparams)
     elif hparams.method == 'groupdro':
         trainer = GroupDRO(hparams)
     elif hparams.method == 'unsupdro':

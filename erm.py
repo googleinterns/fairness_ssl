@@ -15,11 +15,11 @@ import numpy as np
 
 import pdb
 
-class Supervised(BaseTrain):
+class ERM(BaseTrain):
     """Fully-supervised model trainer."""
 
     def __init__(self, hparams):
-        super(Supervised, self).__init__(hparams)
+        super(ERM, self).__init__(hparams)
         
     def train_step(self, batch):
         """Trains a model for one step."""
@@ -102,7 +102,7 @@ class Supervised(BaseTrain):
 
             
 if __name__ == '__main__':
-    trainer = Supervised(hparams=HParams({'dataset': 'Adult',
+    trainer = ERM(hparams=HParams({'dataset': 'Adult',
                                          'batch_size': 64,
                                          'model_type': 'fullyconn',
                                          'learning_rate': 0.0001,

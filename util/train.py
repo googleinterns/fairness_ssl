@@ -225,7 +225,7 @@ class BaseTrain(object):
     def create_metrics_dict(self):
         """Gets metrics.
 
-        Each key in metrics_dict is of the kind f"{prefix}{measure}{control}". Here, prefix stands train/val/test. Measure is either loss/size/acc/y_score/y_true. Control stands for the sensitive group ID for which the measure is computed. When control is set to "-1" then the measure across all the samples is computed.
+        Each key in metrics_dict is of the kind f"{prefix}{measure}{control}". Here, prefix stands train/val/test. Measure is either loss/acc/y_score/y_true. Control stands for the sensitive group ID for which the measure is computed. When control is set to "-1" then the measure across all the samples is computed.
         """
         n_controls = self.dset.n_controls
         self.metrics_dict = {}
@@ -235,7 +235,7 @@ class BaseTrain(object):
                 for measure in ['loss', 'acc']:
                     self.metrics_dict[f'{prefix}.{measure}.{control}'] = AverageMeter()
                 for measure in ['y_score', 'y_true']:
-                    self.metrics_dict[f'{prefix}.{measure}.{control}'] = []
+                    self.metrics_dict[f'{prefix}.{measure}.{control}'] = np.array([])
 
                     
     def reset_metrics_dict(self, prefix=''):
@@ -245,7 +245,7 @@ class BaseTrain(object):
             if key.startswith(prefix):
                 if isinstance(self.metrics_dict[key], AverageMeter):
                     self.metrics_dict[key].reset()
-                elif isinstance(self.metrics_dict[key], list):
+                elif isinstance(self.metrics_dict[key], np.ndarray):
                     self.metrics_dict[key] = []
 
     def monitor(self, updatelog=True):

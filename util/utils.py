@@ -1,4 +1,7 @@
 import torch
+import math
+
+import pdb
 
 class HParams(dict):
     """Custom dictionary that allows to access dict values as attributes."""
@@ -19,6 +22,10 @@ class AverageMeter(object):
         self.count = 0.0
 
     def update(self, val, n=1):
+        # nan implies division by zero
+        # we skip nans here
+        if math.isnan(val):
+            return
         self.val = val
         self.valsum += val * n
         self.count += n

@@ -70,7 +70,7 @@ class BaseTrain(object):
             model = FullyConnected(input_dim=input_dim, latent_dim=self.hp.latent_dim)
 
         # Print model summary.
-        print(summary(model, input_dim, show_input=False))
+        # print(summary(model, input_dim, show_input=False))
 
         # Cast to CUDA if GPUs are available.
         if self.hp.flag_usegpu and torch.cuda.is_available():

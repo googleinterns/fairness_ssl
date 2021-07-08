@@ -37,23 +37,6 @@ class GroupDRO(BaseTrain):
         # Additional hyperparameters.
         self.groupdro_stepsize = self.hp.groupdro_stepsize
         
-    def get_model(self, input_dim):
-        """Gets model."""
-
-        if self.hp.model_type == 'fullyconn':
-            model = FullyConnected(input_dim=input_dim, latent_dim=self.hp.latent_dim)
-
-        # Print model summary.
-        #print(summary(model, input_dim, show_input=False))
-
-        # Cast to CUDA if GPUs are available.
-        if self.hp.flag_usegpu and torch.cuda.is_available():
-            print('cuda device count: ', torch.cuda.device_count())
-            model = torch.nn.DataParallel(model)
-            model = model.cuda()
-            
-        return model
-
     def stats_per_control(self, sample_losses, cid):
         control_map = (cid == torch.arange(self.dset.n_controls).unsqueeze(1).long()).float()
         control_count = control_map.sum(1)

@@ -15,14 +15,29 @@ import numpy as np
 
 import pdb
 
-class Supervised(BaseTrain):
-    """Fully-supervised model trainer."""
+class UnsupDRO(BaseTrain):
+    """Fully Unsupervised DRO measure.
+    https://arxiv.org/pdf/1806.08010.pdf
+    """
 
     def __init__(self, hparams):
-        super(Supervised, self).__init__(hparams)
+        super(UnsupDRO, self).__init__(hparams)
+        print('UnsupDRO!')
 
+    def get_ckpt_path(self):
+        super(UnsupDRO, self).get_ckpt_path()
+        new_params = ['_unsupdro_eta', self.hp.unsupdro_eta]
+        self.params_str += '_'.join([str(x) for x in new_params])
+        
+    def get_config(self):
+        super(UnsupDRO, self).get_config()
+
+        # Additional hyperparameters.
+        self.unsupdro_eta = self.hp.unsupdro_eta
+        self.relu = torch.nn.ReLU()
+        
     def get_model(self, input_dim):
-        """Gets model."""
+        """Gets model. """
 
         if self.hp.model_type == 'fullyconn':
             model = FullyConnected(input_dim=input_dim, latent_dim=self.hp.latent_dim)
@@ -35,11 +50,12 @@ class Supervised(BaseTrain):
             print('cuda device count: ', torch.cuda.device_count())
             model = torch.nn.DataParallel(model)
             model = model.cuda()
-
+            
         return model
-        
+    
     def train_step(self, batch):
         """Trains a model for one step."""
+        
         # Prepare data.
         x = batch[0].float()
         y = batch[1].long()
@@ -52,17 +68,20 @@ class Supervised(BaseTrain):
         # Compute loss 
         y_logit = self.model(x)
         y_pred = torch.argmax(y_logit, 1)
-        
-        loss = F.cross_entropy(y_logit, y)
 
+        # Calculating unsupervised dro
+        loss = F.cross_entropy(y_logit, y, reduction='none')
+        loss_unsupdro = self.relu(loss - self.unsupdro_eta).mean()
+        
         # Compute gradient.
         self.optimizer.zero_grad()
-        loss.backward()
+        loss_unsupdro.backward()
         self.optimizer.step()
 
         # Update metrics.
         # Maintains running average over all the metrics
-        # TODO: using average meter 
+        # TODO: using average meter
+        # TODO: eliminate the need for for loops
         prefix = 'train'
         for cid in range(-1, self.dset.n_controls):
             bsize = len(c) if cid == -1 else len(c == cid)
@@ -119,7 +138,7 @@ class Supervised(BaseTrain):
 
             
 if __name__ == '__main__':
-    trainer = Supervised(hparams=HParams({'dataset': 'Adult',
+    trainer = UnsupDRO(hparams=HParams({'dataset': 'Adult',
                                          'batch_size': 64,
                                          'model_type': 'fullyconn',
                                          'learning_rate': 0.0001,

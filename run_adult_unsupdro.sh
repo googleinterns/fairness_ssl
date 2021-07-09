@@ -5,7 +5,7 @@ do
 	   --method 'unsupdro' \
 	   --noflag_usegpu \
 	   --noflag_saveckpt \
-	   --num_epoch 201 \
+	   --num_epoch 51 \
 	   --learning_rate 0.001 \
 	   --unsupdro_eta "$eta"
 done

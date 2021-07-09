@@ -11,7 +11,7 @@ class MetricsEval(object):
         pass
 
     def get_allmeasures(self):
-        return ['loss', 'size', 'acc', 'y_score', 'y_true']
+        return ['loss', 'acc', 'y_score', 'y_true']
         
     def get_reduction(self, m, reduction='mean'):
         if reduction == 'mean':
@@ -21,12 +21,12 @@ class MetricsEval(object):
         elif reduction == 'none':
             return m
 
-    def cross_entropy(self, y_logit, y_true, select):
-        loss =  F.cross_entropy(y_logit[select], y_true[select])
+    def cross_entropy(self, y_logit, y_true):
+        loss =  F.cross_entropy(y_logit, y_true)
         return loss.item()
 
-    def accuracy(self, y_pred, y_true, select):
-        acc = torch.sum(y_pred[select] == y_true[select]) / y_pred[select].size(0)
+    def accuracy(self, y_pred, y_true):
+        acc = torch.sum(y_pred == y_true) / y_pred.size(0)
         return acc.item()
 
     def roc_auc(self, y_score, y_true):

@@ -63,26 +63,25 @@ class UnsupDRO(BaseTrain):
 
         # Update metrics.
         # Maintains running average over all the metrics
-        # TODO: using average meter
         # TODO: eliminate the need for for loops
         prefix = 'train'
         for cid in range(-1, self.dset.n_controls):
-            bsize = len(c) if cid == -1 else len(c == cid)
+            bsize = len(c) if cid == -1 else sum(c == cid)
             select = c > -1 if cid == -1 else c == cid
 
-            self.metrics_dict[f'{prefix}.loss.{cid}'] = \
-                (MetricsEval().cross_entropy(y_logit, y, select) * bsize + self.metrics_dict[f'{prefix}.loss.{cid}'] * self.metrics_dict[f'{prefix}.size.{cid}']) / (bsize + self.metrics_dict[f'{prefix}.size.{cid}'])
+            self.metrics_dict[f'{prefix}.loss.{cid}'].update(
+                MetricsEval().cross_entropy(y_logit[select], y[select]), bsize)
             
-            self.metrics_dict[f'{prefix}.acc.{cid}'] = \
-                (MetricsEval().accuracy(y_pred, y, select) * bsize + self.metrics_dict[f'{prefix}.acc.{cid}'] * self.metrics_dict[f'{prefix}.size.{cid}']) / (bsize + self.metrics_dict[f'{prefix}.size.{cid}'])
-
+            self.metrics_dict[f'{prefix}.acc.{cid}'].update(
+                MetricsEval().accuracy(y_pred[select], y[select]), bsize)
+            
             self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
-                np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'], MetricsEval().logit2prob(y_logit[select]).cpu().numpy()))
+                np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'],
+                                MetricsEval().logit2prob(y_logit[select]).cpu().numpy()))
+            
             self.metrics_dict[f'{prefix}.y_true.{cid}'] = \
-                np.concatenate((self.metrics_dict[f'{prefix}.y_true.{cid}'], y[select].cpu().numpy()))
-
-            self.metrics_dict[f'{prefix}.size.{cid}'] += bsize
-                               
+                np.concatenate((self.metrics_dict[f'{prefix}.y_true.{cid}'],
+                                y[select].cpu().numpy()))
 
     def eval_step(self, batch, prefix='test'):
         """Trains a model for one step."""
@@ -99,26 +98,24 @@ class UnsupDRO(BaseTrain):
         with torch.no_grad():
             y_logit = self.model(x)
             y_pred = torch.argmax(y_logit, 1)
-            
 
         for cid in range(-1, self.dset.n_controls):
-            bsize = len(c) if cid == -1 else len(c == cid)
+            bsize = len(c) if cid == -1 else sum(c == cid)
             select = c > -1 if cid == -1 else c == cid
 
-            self.metrics_dict[f'{prefix}.loss.{cid}'] = \
-                (MetricsEval().cross_entropy(y_logit, y, select) * bsize + self.metrics_dict[f'{prefix}.loss.{cid}'] * self.metrics_dict[f'{prefix}.size.{cid}']) / (bsize + self.metrics_dict[f'{prefix}.size.{cid}'])
-
-            self.metrics_dict[f'{prefix}.acc.{cid}'] = \
-                (MetricsEval().accuracy(y_pred, y, select) * bsize + self.metrics_dict[f'{prefix}.acc.{cid}'] * self.metrics_dict[f'{prefix}.size.{cid}']) / (bsize + self.metrics_dict[f'{prefix}.size.{cid}'])
-
+            self.metrics_dict[f'{prefix}.loss.{cid}'].update(
+                MetricsEval().cross_entropy(y_logit[select], y[select]), bsize)
+            
+            self.metrics_dict[f'{prefix}.acc.{cid}'].update(
+                MetricsEval().accuracy(y_pred[select], y[select]), bsize)
+            
             self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
-                np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'], MetricsEval().logit2prob(y_logit[select]).cpu().numpy()))
+                np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'],
+                                MetricsEval().logit2prob(y_logit[select]).cpu().numpy()))
+            
             self.metrics_dict[f'{prefix}.y_true.{cid}'] = \
-                np.concatenate((self.metrics_dict[f'{prefix}.y_true.{cid}'], y[select].cpu().numpy()))
-
-            self.metrics_dict[f'{prefix}.size.{cid}'] += bsize
-
-
+                np.concatenate((self.metrics_dict[f'{prefix}.y_true.{cid}'],
+                                y[select].cpu().numpy()))
             
 if __name__ == '__main__':
     trainer = UnsupDRO(hparams=HParams({'dataset': 'Adult',

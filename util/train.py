@@ -20,7 +20,7 @@ from data.tabular import Tabular
 
 from model.fullyconn import FullyConnected
 
-from util.utils import HParams
+from util.utils import HParams, AverageMeter
 
 from util.metrics_store import MetricsEval
 
@@ -225,17 +225,17 @@ class BaseTrain(object):
     def create_metrics_dict(self):
         """Gets metrics.
 
-        Each key in metrics_dict is of the kind f"{prefix}{measure}{control}". Here, prefix stands train/val/test. Measure is either loss/size/acc/y_score/y_true. Control stands for the sensitive group ID for which the measure is computed. When control is set to "-1" then the measure across all the samples is computed.
+        Each key in metrics_dict is of the kind f"{prefix}{measure}{control}". Here, prefix stands train/val/test. Measure is either loss/acc/y_score/y_true. Control stands for the sensitive group ID for which the measure is computed. When control is set to "-1" then the measure across all the samples is computed.
         """
         n_controls = self.dset.n_controls
         self.metrics_dict = {}
         
         for prefix in ['train', 'val', 'test']:
             for control in range(-1, n_controls):
-                for measure in ['loss', 'size', 'acc']:
-                    self.metrics_dict[f'{prefix}.{measure}.{control}'] = 0.0
+                for measure in ['loss', 'acc']:
+                    self.metrics_dict[f'{prefix}.{measure}.{control}'] = AverageMeter()
                 for measure in ['y_score', 'y_true']:
-                    self.metrics_dict[f'{prefix}.{measure}.{control}'] = []
+                    self.metrics_dict[f'{prefix}.{measure}.{control}'] = np.array([])
 
                     
     def reset_metrics_dict(self, prefix=''):
@@ -243,9 +243,9 @@ class BaseTrain(object):
         
         for key in self.metrics_dict:
             if key.startswith(prefix):
-                if isinstance(self.metrics_dict[key], float):
-                    self.metrics_dict[key] = 0.0
-                elif isinstance(self.metrics_dict[key], list):
+                if isinstance(self.metrics_dict[key], AverageMeter):
+                    self.metrics_dict[key].reset()
+                elif isinstance(self.metrics_dict[key], np.ndarray):
                     self.metrics_dict[key] = []
 
     def monitor(self, updatelog=True):
@@ -261,7 +261,7 @@ class BaseTrain(object):
             string_to_print = f'[{self.epoch}/{self.hp.num_epoch}] {p: <7} \n'
             for cid in range(-1, self.dset.n_controls):
                 m = 'acc'
-                score = self.metrics_dict[f'{p}.{m}.{cid}']
+                score = self.metrics_dict[f'{p}.{m}.{cid}'].get_avg()
                 string_to_print += f' {m} group{cid} {score:.4f}'
 
                 m = 'auc'
@@ -276,7 +276,7 @@ class BaseTrain(object):
         for p in ['train', 'val', 'test']:
             for cid in range(-1, self.dset.n_controls):
                 m = 'acc'
-                score = self.metrics_dict[f'{p}.{m}.{cid}'] 
+                score = self.metrics_dict[f'{p}.{m}.{cid}'].get_avg()
                 self.writer.add_scalar(f'{p}/{m}.{cid}', score, self.epoch)
                 
                 m = 'auc'
@@ -377,7 +377,7 @@ class BaseTrain(object):
         for batch in data_loader:
             self.eval_step(batch, prefix=prefix)
 
-        return self.metrics_dict[f'{prefix}.acc.-1']
+        return self.metrics_dict[f'{prefix}.acc.-1'].get_avg()
 
     def eval_step(self, batch, prefix='test'):
         """Evaluates a model for one step."""

@@ -56,7 +56,7 @@ flags.DEFINE_string(name='ckpt_path', default='',
                     help='path to save model.')
 
 # Debug mode.
-#parser.add_argument('--flag_debug', default=False, action='store_true', help='debug flag'))
+flags.DEFINE_bool(name='flag_debug', default=False, help='Enables Debug Mode')
 
 # DRO hyper-params
 flags.DEFINE_float(name='groupdro_stepsize', default=0.01,

@@ -167,6 +167,8 @@ class BaseTrain(object):
 
         if self.hp.ckpt_path:
             ckpt_path = self.hp.ckpt_path
+        elif self.hp.flag_debug:
+            ckpt_path = f'{self.dataset_name}_{self.__class__.__name__}_debug'
         else:
             runTime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             ckpt_path = f'{self.dataset_name}_{self.__class__.__name__}_{runTime}'            

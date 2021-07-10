@@ -15,10 +15,12 @@ import pdb
 class Tabular(object):
   """Tabular data loader."""
 
-  def __init__(self, dataset_name='Adult'):
+  def __init__(self, dataset_name='Adult', lab_split = 1.0, seed = 42):
     print('Using ', dataset_name)
     self.dataset_name = dataset_name
-
+    self.dataseed = seed
+    self.lab_split = lab_split
+    
     self.load_raw_data(dataset_name=dataset_name)
 
     # Create Torch Custom Datasets
@@ -72,6 +74,16 @@ class Tabular(object):
     self.y_test = test_target
     self.c_test = test_control
 
+    pdb.set_trace()
+    
+    # SSL Setting
+    if self.lab_split < 1.0:
+      np.random.seed(self.dataseed)
+      select = np.random.choice([False, True], size=len(self.c_train),\
+                       replace=True, p = [self.lab_split, 1-self.lab_split])
+      self.c_train[select] = -1 # Indicates label not available      
+      
+    
   def load_dataset(self,
                    batch_size=64,
                    num_batch_per_epoch=None,

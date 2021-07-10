@@ -64,6 +64,11 @@ flags.DEFINE_float(name='groupdro_stepsize', default=0.01,
 flags.DEFINE_float(name='unsupdro_eta', default=0.9,
                    help='soft penalty step size.')
 
+# SSL Parameters
+flags.DEFINE_float(name='lab_split', default=1.0,
+                   help='The ratio of labelled samples in the dataset')
+
+
 
 FLAGS = flags.FLAGS
 

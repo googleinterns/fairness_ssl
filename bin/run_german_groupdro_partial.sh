@@ -6,5 +6,6 @@ python train_and_eval_loop.py \
        --num_epoch 501 \
        --learning_rate 0.01 \
        --groupdro_stepsize 0.001 \
+       --lab_split 0.1 \
        --flag_debug
 

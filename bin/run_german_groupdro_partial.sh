@@ -1,4 +1,4 @@
-for ratio in 0.1 0.3 0.6 0.9
+for ratio in 0.1
 do
     python train_and_eval_loop.py \
 	   --dataset 'German' \
@@ -8,5 +8,6 @@ do
 	   --num_epoch 501 \
 	   --learning_rate 0.01 \
 	   --groupdro_stepsize 0.001 \
-	   --lab_split "$ratio" 
+	   --lab_split "$ratio"  \
+	   --flag_debug
 done

@@ -11,6 +11,8 @@ from util.metrics_store import MetricsEval
 
 from pytorch_model_summary import summary
 
+from util.utils import HParams
+
 import numpy as np
 
 import pdb
@@ -38,7 +40,7 @@ class UnsupDRO(BaseTrain):
             
     def train_step(self, batch):
         """Trains a model for one step."""
-        
+
         # Prepare data.
         x = batch[0].float()
         y = batch[1].long()
@@ -47,7 +49,7 @@ class UnsupDRO(BaseTrain):
             x = x.cuda()
             y = y.cuda()
             c = c.cuda()
-
+            
         # Compute loss 
         y_logit = self.model(x)
         y_pred = torch.argmax(y_logit, 1)
@@ -66,14 +68,13 @@ class UnsupDRO(BaseTrain):
         # TODO: eliminate the need for for loops
         prefix = 'train'
         for cid in range(-1, self.dset.n_controls):
-            bsize = len(c) if cid == -1 else sum(c == cid)
-            select = c > -1 if cid == -1 else c == cid
+            select = c >= 0 if cid == -1 else c == cid 
 
             self.metrics_dict[f'{prefix}.loss.{cid}'].update(
-                MetricsEval().cross_entropy(y_logit[select], y[select]), bsize)
+                MetricsEval().cross_entropy(y_logit[select], y[select]))
             
             self.metrics_dict[f'{prefix}.acc.{cid}'].update(
-                MetricsEval().accuracy(y_pred[select], y[select]), bsize)
+                MetricsEval().accuracy(y_pred[select], y[select]))
             
             self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
                 np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'],
@@ -100,14 +101,13 @@ class UnsupDRO(BaseTrain):
             y_pred = torch.argmax(y_logit, 1)
 
         for cid in range(-1, self.dset.n_controls):
-            bsize = len(c) if cid == -1 else sum(c == cid)
-            select = c > -1 if cid == -1 else c == cid
+            select = c != DF_M if cid == -1 else c == cid 
 
             self.metrics_dict[f'{prefix}.loss.{cid}'].update(
-                MetricsEval().cross_entropy(y_logit[select], y[select]), bsize)
+                MetricsEval().cross_entropy(y_logit[select], y[select]))
             
             self.metrics_dict[f'{prefix}.acc.{cid}'].update(
-                MetricsEval().accuracy(y_pred[select], y[select]), bsize)
+                MetricsEval().accuracy(y_pred[select], y[select]))
             
             self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
                 np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'],

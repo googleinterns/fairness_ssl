@@ -56,13 +56,18 @@ flags.DEFINE_string(name='ckpt_path', default='',
                     help='path to save model.')
 
 # Debug mode.
-#parser.add_argument('--flag_debug', default=False, action='store_true', help='debug flag'))
+flags.DEFINE_bool(name='flag_debug', default=False, help='Enables Debug Mode')
 
 # DRO hyper-params
 flags.DEFINE_float(name='groupdro_stepsize', default=0.01,
                    help='soft penalty step size.')
 flags.DEFINE_float(name='unsupdro_eta', default=0.9,
                    help='soft penalty step size.')
+
+# SSL Parameters
+flags.DEFINE_float(name='lab_split', default=1.0,
+                   help='The ratio of labelled samples in the dataset')
+
 
 
 FLAGS = flags.FLAGS

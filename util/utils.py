@@ -3,6 +3,8 @@ import math
 
 import pdb
 
+DEFAULT_MISSING_CONST = -42
+
 class HParams(dict):
     """Custom dictionary that allows to access dict values as attributes."""
 
@@ -36,3 +38,6 @@ class AverageMeter(object):
 
     def get_current_val(self):
         return self.val
+
+
+    

@@ -51,7 +51,7 @@ class BaseTrain(object):
         """Gets dataset."""
 
         if self.dataset_name in ['German', 'Adult']:
-            return Tabular(self.dataset_name)
+            return Tabular(self.dataset_name, lab_split=self.hp.lab_split)
         else:
             raise ValueError('Dataset not supported.')
 
@@ -167,6 +167,8 @@ class BaseTrain(object):
 
         if self.hp.ckpt_path:
             ckpt_path = self.hp.ckpt_path
+        elif self.hp.flag_debug:
+            ckpt_path = f'{self.dataset_name}_{self.__class__.__name__}_debug'
         else:
             runTime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             ckpt_path = f'{self.dataset_name}_{self.__class__.__name__}_{runTime}'            
@@ -177,7 +179,8 @@ class BaseTrain(object):
                   'learning_rate', self.hp.learning_rate,
                   'batch_size', self.hp.batch_size,
                   'seed', self.hp.seed,
-                  'latent_dim', self.hp.latent_dim]
+                  'latent_dim', self.hp.latent_dim,
+                  'lab_split', self.hp.lab_split]
         self.params_str = '_'.join([str(x) for x in params])
         
 

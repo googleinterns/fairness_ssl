@@ -9,13 +9,20 @@ import torch
 from torch.utils.data import Dataset
 
 from data import data_util
+
+from util.utils import DEFAULT_MISSING_CONST as DF_M
+
+import pdb
     
 class Tabular(object):
   """Tabular data loader."""
 
-  def __init__(self, dataset_name='Adult'):
+  def __init__(self, dataset_name='Adult', lab_split = 1.0, seed = 42):
     print('Using ', dataset_name)
     self.dataset_name = dataset_name
+    self.dataseed = seed
+    self.lab_split = lab_split
+    
     self.load_raw_data(dataset_name=dataset_name)
 
     # Create Torch Custom Datasets
@@ -29,6 +36,10 @@ class Tabular(object):
                                           target=self.y_test, \
                                           control=self.c_test)
 
+    # Class counts
+    self.n_targets = len(np.unique(self.y_train))
+    self.n_controls = len(np.unique(self.c_train[self.c_train != DF_M])) # ignoring unavailable labels
+    
   def load_raw_data(self, dataset_name='Adult'):
     """Load raw tabular data.
     """
@@ -64,7 +75,15 @@ class Tabular(object):
     self.x_test = test_data
     self.y_test = test_target
     self.c_test = test_control
-
+    
+    # SSL Setting
+    if self.lab_split < 1.0:
+      np.random.seed(self.dataseed)
+      select = np.random.choice([False, True], size=len(self.c_train),\
+                       replace=True, p = [self.lab_split, 1-self.lab_split])
+      self.c_train[select] = DF_M # DF_M denotes that the label is not available      
+      
+    
   def load_dataset(self,
                    batch_size=64,
                    num_batch_per_epoch=None,

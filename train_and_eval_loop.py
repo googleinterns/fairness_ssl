@@ -7,7 +7,9 @@
 from absl import app
 from absl import flags
 
-from supervised import Supervised
+from erm import ERM
+from groupdro import GroupDRO
+from unsupdro import UnsupDRO
 
 from util.utils import HParams
 
@@ -24,10 +26,12 @@ flags.DEFINE_enum(name='model_type', default='fullyconn',
                   enum_values=['fullyconn', 'resnet'], help='model type.')
 flags.DEFINE_integer(name='latent_dim', default=64,
                      help='latent dims for fully connected network')
+flags.DEFINE_bool(name='flag_usegpu', default=True, help='To use GPU or not')
+flags.DEFINE_bool(name='flag_saveckpt', default=True, help='To save checkpoints or not')
 
 # Optimization.
-flags.DEFINE_enum(name='method', default='supervised',
-                  enum_values=['supervised', 'suprawlsian'],
+flags.DEFINE_enum(name='method', default='erm',
+                  enum_values=['erm', 'groupdro', 'unsupdro'],
                   help='method.')
 flags.DEFINE_integer(name='seed', default=42, help='random seed for optimizer.')
 flags.DEFINE_enum(name='optimizer', default='Adam',
@@ -52,13 +56,18 @@ flags.DEFINE_string(name='ckpt_path', default='',
                     help='path to save model.')
 
 # Debug mode.
-#parser.add_argument('--flag_debug', default=False, action='store_true', help='debug flag'))
+flags.DEFINE_bool(name='flag_debug', default=False, help='Enables Debug Mode')
 
-# Semi-supervised.
-flags.DEFINE_float(name='threshold', default=0.0,
-                   help='confidence threshold.')
-flags.DEFINE_integer(name='warmup_epoch', default=0,
-                     help='warmup epoch for unsupervised loss.')
+# DRO hyper-params
+flags.DEFINE_float(name='groupdro_stepsize', default=0.01,
+                   help='soft penalty step size.')
+flags.DEFINE_float(name='unsupdro_eta', default=0.9,
+                   help='soft penalty step size.')
+
+# SSL Parameters
+flags.DEFINE_float(name='lab_split', default=1.0,
+                   help='The ratio of labelled samples in the dataset')
+
 
 
 FLAGS = flags.FLAGS
@@ -67,8 +76,12 @@ FLAGS = flags.FLAGS
 def get_trainer(hparams):
     """Gets trainer for the required method."""
 
-    if hparams.method == 'supervised':
-        trainer = Supervised(hparams)
+    if hparams.method == 'erm':
+        trainer = ERM(hparams)
+    elif hparams.method == 'groupdro':
+        trainer = GroupDRO(hparams)
+    elif hparams.method == 'unsupdro':
+        trainer = UnsupDRO(hparams)
     else:
         raise NotImplementedError
 

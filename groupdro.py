@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from model.fullyconn import FullyConnected
 
 from util.train import BaseTrain
-from util.utils import HParams
+from util.utils import HParams, DEFAULT_MISSING_CONST as DF_M
 from util.metrics_store import MetricsEval
 
 from pytorch_model_summary import summary
@@ -66,7 +66,7 @@ class GroupDRO(BaseTrain):
         # Compute loss 
         y_logit = self.model(x)
         y_pred = torch.argmax(y_logit, 1)
-        
+
         loss = F.cross_entropy(y_logit, y, reduction='none')
         control_loss, control_count = self.stats_per_control(loss, c)
         loss_groupdro = self.calculate_groupdro_loss(control_loss, control_count)
@@ -81,14 +81,15 @@ class GroupDRO(BaseTrain):
         # TODO: eliminate the need for for loops
         prefix = 'train'
         for cid in range(-1, self.dset.n_controls):
-            bsize = len(c) if cid == -1 else sum(c == cid)
-            select = c > -1 if cid == -1 else c == cid
+            # Unlabelled samples are denoted by DF_M
+            # -1 indicates metrics computed over all the samples
+            select = c != DF_M if cid == -1 else c == cid 
 
             self.metrics_dict[f'{prefix}.loss.{cid}'].update(
-                MetricsEval().cross_entropy(y_logit[select], y[select]), bsize)
+                MetricsEval().cross_entropy(y_logit[select], y[select]))
             
             self.metrics_dict[f'{prefix}.acc.{cid}'].update(
-                MetricsEval().accuracy(y_pred[select], y[select]), bsize)
+                MetricsEval().accuracy(y_pred[select], y[select]))
             
             self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
                 np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'],
@@ -115,14 +116,13 @@ class GroupDRO(BaseTrain):
             y_pred = torch.argmax(y_logit, 1)
 
         for cid in range(-1, self.dset.n_controls):
-            bsize = len(c) if cid == -1 else sum(c == cid)
-            select = c > -1 if cid == -1 else c == cid
+            select = c != DF_M if cid == -1 else c == cid 
 
             self.metrics_dict[f'{prefix}.loss.{cid}'].update(
-                MetricsEval().cross_entropy(y_logit[select], y[select]), bsize)
+                MetricsEval().cross_entropy(y_logit[select], y[select]))
             
             self.metrics_dict[f'{prefix}.acc.{cid}'].update(
-                MetricsEval().accuracy(y_pred[select], y[select]), bsize)
+                MetricsEval().accuracy(y_pred[select], y[select]))
             
             self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
                 np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'],

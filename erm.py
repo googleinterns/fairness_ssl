@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from model.fullyconn import FullyConnected
 
 from util.train import BaseTrain
-from util.utils import HParams
+from util.utils import HParams, DEFAULT_MISSING_CONST as DF_M
 from util.metrics_store import MetricsEval
 
 from pytorch_model_summary import summary
@@ -32,6 +32,10 @@ class ERM(BaseTrain):
             y = y.cuda()
             c = c.cuda()
 
+        # Check for missing values
+        if DF_M in c:
+            raise ValueError('Missing values not supported')
+        
         # Compute loss 
         y_logit = self.model(x)
         y_pred = torch.argmax(y_logit, 1)
@@ -47,14 +51,13 @@ class ERM(BaseTrain):
         # Maintains running average over all the metrics
         prefix = 'train'
         for cid in range(-1, self.dset.n_controls):
-            bsize = len(c) if cid == -1 else sum(c == cid)
-            select = c > -1 if cid == -1 else c == cid
+            select = c >= 0 if cid == -1 else c == cid
 
             self.metrics_dict[f'{prefix}.loss.{cid}'].update(
-                MetricsEval().cross_entropy(y_logit[select], y[select]), bsize)
+                MetricsEval().cross_entropy(y_logit[select], y[select]))
             
             self.metrics_dict[f'{prefix}.acc.{cid}'].update(
-                MetricsEval().accuracy(y_pred[select], y[select]), bsize)
+                MetricsEval().accuracy(y_pred[select], y[select]))
             
             self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
                 np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'],
@@ -78,20 +81,23 @@ class ERM(BaseTrain):
             y = y.cuda()
             c = c.cuda()
 
+        # Check for missing values
+        if DF_M in c:
+            raise ValueError('Missing values not supported')
+
         # Compute loss
         with torch.no_grad():
             y_logit = self.model(x)
             y_pred = torch.argmax(y_logit, 1)
             
         for cid in range(-1, self.dset.n_controls):
-            bsize = len(c) if cid == -1 else sum(c == cid)
-            select = c > -1 if cid == -1 else c == cid
+            select = c >= 0 if cid == -1 else c == cid
 
             self.metrics_dict[f'{prefix}.loss.{cid}'].update(
-                MetricsEval().cross_entropy(y_logit[select], y[select]), bsize)
+                MetricsEval().cross_entropy(y_logit[select], y[select]))
             
             self.metrics_dict[f'{prefix}.acc.{cid}'].update(
-                MetricsEval().accuracy(y_pred[select], y[select]), bsize)
+                MetricsEval().accuracy(y_pred[select], y[select]))
             
             self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
                 np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'],

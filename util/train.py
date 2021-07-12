@@ -179,7 +179,8 @@ class BaseTrain(object):
                   'learning_rate', self.hp.learning_rate,
                   'batch_size', self.hp.batch_size,
                   'seed', self.hp.seed,
-                  'latent_dim', self.hp.latent_dim]
+                  'latent_dim', self.hp.latent_dim,
+                  'lab_split', self.hp.lab_split]
         self.params_str = '_'.join([str(x) for x in params])
         
 

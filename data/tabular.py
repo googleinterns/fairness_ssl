@@ -10,6 +10,8 @@ from torch.utils.data import Dataset
 
 from data import data_util
 
+from util.utils import DEFAULT_MISSING_CONST as DF_M
+
 import pdb
     
 class Tabular(object):
@@ -36,8 +38,8 @@ class Tabular(object):
 
     # Class counts
     self.n_targets = len(np.unique(self.y_train))
-    self.n_controls = len(np.unique(self.c_train))    
-
+    self.n_controls = len(np.unique(self.c_train[self.c_train != DF_M])) # ignoring unavailable labels
+    
   def load_raw_data(self, dataset_name='Adult'):
     """Load raw tabular data.
     """
@@ -73,15 +75,13 @@ class Tabular(object):
     self.x_test = test_data
     self.y_test = test_target
     self.c_test = test_control
-
-    pdb.set_trace()
     
     # SSL Setting
     if self.lab_split < 1.0:
       np.random.seed(self.dataseed)
       select = np.random.choice([False, True], size=len(self.c_train),\
                        replace=True, p = [self.lab_split, 1-self.lab_split])
-      self.c_train[select] = -1 # Indicates label not available      
+      self.c_train[select] = DF_M # DF_M denotes that the label is not available      
       
     
   def load_dataset(self,

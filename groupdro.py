@@ -83,13 +83,16 @@ class GroupDRO(BaseTrain):
         for cid in range(-1, self.dset.n_controls):
             # Unlabelled samples are denoted by DF_M
             # -1 indicates metrics computed over all the samples
-            select = c != DF_M if cid == -1 else c == cid 
-
+            select = c != DF_M if cid == -1 else c == cid
+            size = sum(select)
+            
             self.metrics_dict[f'{prefix}.loss.{cid}'].update(
-                MetricsEval().cross_entropy(y_logit[select], y[select]))
+                val=MetricsEval().cross_entropy(y_logit[select], y[select]),
+                num=size)
             
             self.metrics_dict[f'{prefix}.acc.{cid}'].update(
-                MetricsEval().accuracy(y_pred[select], y[select]))
+                val=MetricsEval().accuracy(y_pred[select], y[select]),
+                num=size)
             
             self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
                 np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'],
@@ -116,13 +119,16 @@ class GroupDRO(BaseTrain):
             y_pred = torch.argmax(y_logit, 1)
 
         for cid in range(-1, self.dset.n_controls):
-            select = c != DF_M if cid == -1 else c == cid 
-
+            select = c != DF_M if cid == -1 else c == cid
+            size = sum(select)
+            
             self.metrics_dict[f'{prefix}.loss.{cid}'].update(
-                MetricsEval().cross_entropy(y_logit[select], y[select]))
+                val=MetricsEval().cross_entropy(y_logit[select], y[select]),
+                num=size)
             
             self.metrics_dict[f'{prefix}.acc.{cid}'].update(
-                MetricsEval().accuracy(y_pred[select], y[select]))
+                val=MetricsEval().accuracy(y_pred[select], y[select]),
+                num=size)
             
             self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
                 np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'],

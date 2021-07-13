@@ -1,4 +1,4 @@
-for stepsz in 0.01 0.001 0.0001
+for stepsz in 0.001
 do
     python train_and_eval_loop.py \
 	   --dataset 'Adult' \

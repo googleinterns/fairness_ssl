@@ -69,12 +69,15 @@ class UnsupDRO(BaseTrain):
         prefix = 'train'
         for cid in range(-1, self.dset.n_controls):
             select = c >= 0 if cid == -1 else c == cid 
-
+            size = sum(select)
+            
             self.metrics_dict[f'{prefix}.loss.{cid}'].update(
-                MetricsEval().cross_entropy(y_logit[select], y[select]))
+                val=MetricsEval().cross_entropy(y_logit[select], y[select]),
+                num=size)
             
             self.metrics_dict[f'{prefix}.acc.{cid}'].update(
-                MetricsEval().accuracy(y_pred[select], y[select]))
+                val=MetricsEval().accuracy(y_pred[select], y[select]),
+                num=size)
             
             self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
                 np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'],
@@ -102,12 +105,15 @@ class UnsupDRO(BaseTrain):
 
         for cid in range(-1, self.dset.n_controls):
             select = c != DF_M if cid == -1 else c == cid 
-
+            size = sum(select)
+            
             self.metrics_dict[f'{prefix}.loss.{cid}'].update(
-                MetricsEval().cross_entropy(y_logit[select], y[select]))
+                val=MetricsEval().cross_entropy(y_logit[select], y[select]),
+                num=size)
             
             self.metrics_dict[f'{prefix}.acc.{cid}'].update(
-                MetricsEval().accuracy(y_pred[select], y[select]))
+                val=MetricsEval().accuracy(y_pred[select], y[select]),
+                num=size)
             
             self.metrics_dict[f'{prefix}.y_score.{cid}'] = \
                 np.concatenate((self.metrics_dict[f'{prefix}.y_score.{cid}'],

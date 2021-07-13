@@ -23,14 +23,14 @@ class AverageMeter(object):
         self.valsum = 0.0
         self.count = 0.0
 
-    def update(self, val, n=1):
+    def update(self, val, num=1):
         # nan implies division by zero
         # we skip nans here
         if math.isnan(val):
             return
         self.val = val
-        self.valsum += val * n
-        self.count += n
+        self.valsum += val * num
+        self.count += num
         self.avg = self.valsum / self.count
 
     def get_avg(self):

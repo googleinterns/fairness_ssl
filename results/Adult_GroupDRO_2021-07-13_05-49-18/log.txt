@@ -1,0 +1,97 @@
+dataset_Adult_method_GroupDRO_optimizer_Adam_learning_rate_0.001_batch_size_64_seed_42_latent_dim_64_lab_split_1.0_groupdro_stepsize_0.001
+[1/51] time    (train)  0.22 (min) (eval)  0.04 (min)
+[1/51] train   
+ acc group-1 0.7998 auc group-1 0.8214 
+ acc group0 0.7499 auc group0 0.7896 
+ acc group1 0.9034 auc group1 0.8504 
+
+[1/51] val     
+ acc group-1 0.8300 auc group-1 0.8829 
+ acc group0 0.7917 auc group0 0.8568 
+ acc group1 0.9096 auc group1 0.9061 
+
+[1/51] test    
+ acc group-1 0.8293 auc group-1 0.8817 
+ acc group0 0.7890 auc group0 0.8555 
+ acc group1 0.9130 auc group1 0.9049 
+
+[2/51] time    (train)  0.02 (min) (eval)  0.04 (min)
+[2/51] train   
+ acc group-1 0.8340 auc group-1 0.8845 
+ acc group0 0.7930 auc group0 0.8548 
+ acc group1 0.9194 auc group1 0.9213 
+
+[2/51] val     
+ acc group-1 0.8352 auc group-1 0.8906 
+ acc group0 0.7979 auc group0 0.8655 
+ acc group1 0.9129 auc group1 0.9137 
+
+[2/51] test    
+ acc group-1 0.8300 auc group-1 0.8883 
+ acc group0 0.7917 auc group0 0.8638 
+ acc group1 0.9097 auc group1 0.9116 
+
+[3/51] time    (train)  0.02 (min) (eval)  0.04 (min)
+[3/51] train   
+ acc group-1 0.8385 auc group-1 0.8907 
+ acc group0 0.7967 auc group0 0.8603 
+ acc group1 0.9253 auc group1 0.9306 
+
+[3/51] val     
+ acc group-1 0.8392 auc group-1 0.8941 
+ acc group0 0.8026 auc group0 0.8693 
+ acc group1 0.9153 auc group1 0.9172 
+
+[3/51] test    
+ acc group-1 0.8370 auc group-1 0.8909 
+ acc group0 0.7992 auc group0 0.8661 
+ acc group1 0.9154 auc group1 0.9154 
+
+[4/51] time    (train)  0.02 (min) (eval)  0.04 (min)
+[4/51] train   
+ acc group-1 0.8473 auc group-1 0.8981 
+ acc group0 0.8081 auc group0 0.8689 
+ acc group1 0.9289 auc group1 0.9357 
+
+[4/51] val     
+ acc group-1 0.8398 auc group-1 0.8961 
+ acc group0 0.8029 auc group0 0.8735 
+ acc group1 0.9166 auc group1 0.9218 
+
+[4/51] test    
+ acc group-1 0.8355 auc group-1 0.8913 
+ acc group0 0.7984 auc group0 0.8693 
+ acc group1 0.9125 auc group1 0.9165 
+
+[5/51] time    (train)  0.02 (min) (eval)  0.04 (min)
+[5/51] train   
+ acc group-1 0.8496 auc group-1 0.9016 
+ acc group0 0.8101 auc group0 0.8726 
+ acc group1 0.9317 auc group1 0.9398 
+
+[5/51] val     
+ acc group-1 0.8466 auc group-1 0.9005 
+ acc group0 0.8110 auc group0 0.8764 
+ acc group1 0.9205 auc group1 0.9265 
+
+[5/51] test    
+ acc group-1 0.8413 auc group-1 0.8969 
+ acc group0 0.8050 auc group0 0.8729 
+ acc group1 0.9168 auc group1 0.9229 
+
+[18/51] time    (train)  0.02 (min) (eval)  0.03 (min)
+[18/51] train   
+ acc group-1 0.8700 auc group-1 0.9324 
+ acc group0 0.8335 auc group0 0.9077 
+ acc group1 0.9460 auc group1 0.9692 
+
+[18/51] val     
+ acc group-1 0.8468 auc group-1 0.8929 
+ acc group0 0.8118 auc group0 0.8695 
+ acc group1 0.9196 auc group1 0.9123 
+
+[18/51] test    
+ acc group-1 0.8406 auc group-1 0.8873 
+ acc group0 0.8044 auc group0 0.8640 
+ acc group1 0.9159 auc group1 0.9082 
+

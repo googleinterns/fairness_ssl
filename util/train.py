@@ -271,9 +271,17 @@ class BaseTrain(object):
                 score = MetricsEval().roc_auc(self.metrics_dict[f'{p}.y_score.{cid}'],\
                                               self.metrics_dict[f'{p}.y_true.{cid}'])
                 string_to_print += f' {m} group{cid} {score:.4f} \n'
-                
+
             print(string_to_print)
             if updatelog: self.logf.write(string_to_print+'\n')
+                
+            # TODO update the assertion for multiple groups
+            assert ((self.metrics_dict[f'{p}.acc.0'].get_avg() \
+                     <= self.metrics_dict[f'{p}.acc.-1'].get_avg() \
+                     <= self.metrics_dict[f'{p}.acc.1'].get_avg()) or
+                    (self.metrics_dict[f'{p}.acc.1'].get_avg() \
+                     <= self.metrics_dict[f'{p}.acc.-1'].get_avg() \
+                     <= self.metrics_dict[f'{p}.acc.0'].get_avg())), "Accuracy Trend incorrect"
             
         # Tensorboards.
         for p in ['train', 'val', 'test']:

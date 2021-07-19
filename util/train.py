@@ -52,6 +52,8 @@ class BaseTrain(object):
 
         if self.dataset_name in ['German', 'Adult']:
             return Tabular(self.dataset_name, lab_split=self.hp.lab_split)
+        elif self.dataset_name in ['Waterbirds']:
+            pass
         else:
             raise ValueError('Dataset not supported.')
 

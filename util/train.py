@@ -17,6 +17,7 @@ from pytorch_model_summary import summary
 import pdb
 
 from data.tabular import Tabular
+from data.waterbirds import Waterbirds
 
 from model.fullyconn import FullyConnected
 
@@ -53,7 +54,7 @@ class BaseTrain(object):
         if self.dataset_name in ['German', 'Adult']:
             return Tabular(self.dataset_name, lab_split=self.hp.lab_split)
         elif self.dataset_name in ['Waterbirds']:
-            pass
+            return Waterbirds(lab_split=self.hp.lab_split)
         else:
             raise ValueError('Dataset not supported.')
 

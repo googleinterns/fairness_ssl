@@ -8,7 +8,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-from data.data_util import ImageFromMemory
+from data import data_util
 
 from util.utils import DEFAULT_MISSING_CONST as DF_M
 
@@ -48,78 +48,61 @@ class Waterbirds(object):
 
     # Extract filenames and splits
     self.filename = self.metadata['img_filename'].values
-    self.split_array = self.metadata['split'].values
-    self.split_dict = {
-        'train': 0,
-        'val': 1,
-        'test': 2
-    }
+    self.split_idx = self.metadata['split'].values
 
-    pdb.set_trace()
-    '''
+    # Split train, valid, test
+    fn_train, fn_valid, fn_test, \
+        y_train, y_valid, y_test, \
+        c_train, c_valid, c_test = self.generate_splits()
 
-
-    self.load_raw_data(dataset_name=dataset_name)
-    
     # Create Torch Custom Datasets
-    self.train_set = data_util.ArrayFromMemory(data=self.x_train, \
-                                          target=self.y_train, \
-                                          control=self.c_train)
-    self.val_set = data_util.ArrayFromMemory(data=self.x_valid, \
-                                          target=self.y_valid, \
-                                          control=self.c_valid)
-    self.test_set = data_util.ArrayFromMemory(data=self.x_test, \
-                                          target=self.y_test, \
-                                          control=self.c_test)
-
-    # Class counts
-    self.n_targets = len(np.unique(self.y_train))
-    self.n_controls = len(np.unique(self.c_train[self.c_train != DF_M])) # ignoring unavailable labels
-    '''
+    self.train_set = data_util.ImageFromMemory(filename=fn_train, \
+                                               target=y_train, \
+                                               control=c_train,
+                                               data_dir=self.data_dir)
+    self.val_set = data_util.ImageFromMemory(filename=fn_valid, \
+                                             target=y_valid, \
+                                             control=c_valid,
+                                             data_dir=self.data_dir)                  
+    self.test_set = data_util.ImageFromMemory(filename=fn_test, \
+                                              target=y_test, \
+                                              control=c_test,
+                                              data_dir=self.data_dir)
+    pdb.set_trace()
     
-  def load_raw_data(self, dataset_name='Adult'):
-    """Load raw tabular data.
+  def generate_splits(self):
+    """Create the splits in filename, targets and controls
     """
 
-    # Download data if unavailable
-    data_util.maybe_download(adult_flag=True, german_flag=True)
+    fn_train = self.filename[self.split_idx == 0] # 0 for train
+    fn_valid = self.filename[self.split_idx == 1] # 1 for valid
+    fn_test = self.filename[self.split_idx == 2] # 2 for test
 
-    # Load the dataset
-    #TODO: Single function for process tabular data
-    
-    if dataset_name == 'Adult':
-      train_data, train_target, train_control,\
-        valid_data, valid_target, valid_control,\
-        test_data, test_target, test_control = \
-          data_util.process_adult_data()
-      
-    elif dataset_name == 'German':
-      train_data, train_target, train_control,\
-        valid_data, valid_target, valid_control,\
-        test_data, test_target, test_control = \
-          data_util.process_german_data()
-    else:
-      raise NotImplementedError
+    y_train = self.target[self.split_idx == 0] # 0 for train
+    y_valid = self.target[self.split_idx == 1] # 1 for valid
+    y_test = self.target[self.split_idx == 2] # 2 for test
 
-    self.x_train = train_data
-    self.y_train = train_target
-    self.c_train = train_control
-
-    self.x_valid = valid_data
-    self.y_valid = valid_target 
-    self.c_valid = valid_control
-
-    self.x_test = test_data
-    self.y_test = test_target
-    self.c_test = test_control
+    c_train = self.control[self.split_idx == 0] # 0 for train
+    c_valid = self.control[self.split_idx == 1] # 1 for valid
+    c_test = self.control[self.split_idx == 2] # 2 for test    
     
     # SSL Setting
     if self.lab_split < 1.0:
-      np.random.seed(self.dataseed)
-      select = np.random.choice([False, True], size=len(self.c_train),\
+        # TODO: Write logic for SSL setting
+        '''
+        np.random.seed(self.dataseed)
+        select = np.random.choice([False, True], size=len(self.c_train),\
                        replace=True, p = [self.lab_split, 1-self.lab_split])
-      self.c_train[select] = DF_M # DF_M denotes that the label is not available      
-      
+        self.c_train[select] = DF_M # DF_M denotes that the label is not available      
+        '''
+        pass
+    
+    return fn_train, fn_valid, fn_test, y_train, y_valid, y_test, c_train, c_valid, c_test
+        
+        
+    
+
+    
     
   def load_dataset(self,
                    batch_size=64,

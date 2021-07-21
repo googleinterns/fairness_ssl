@@ -345,6 +345,7 @@ class BaseTrain(object):
         self.model.train()
         for batch in self.train_loader:
             self.train_step(batch)
+            if self.hp.flag_debug: break
 
     def train_epoch_begin(self):
         """Calls at the beginning of the epoch."""
@@ -394,7 +395,8 @@ class BaseTrain(object):
         self.reset_metrics_dict(prefix=prefix)
         for batch in data_loader:
             self.eval_step(batch, prefix=prefix)
-
+            if self.hp.flag_debug: break
+            
         return self.metrics_dict[f'{prefix}.acc.-1'].get_avg()
 
     def eval_step(self, batch, prefix='test'):

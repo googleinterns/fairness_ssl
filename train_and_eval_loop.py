@@ -35,10 +35,10 @@ flags.DEFINE_enum(name='method', default='erm',
                   help='method.')
 flags.DEFINE_integer(name='seed', default=42, help='random seed for optimizer.')
 flags.DEFINE_enum(name='optimizer', default='Adam',
-                  enum_values=['Adam'],
+                  enum_values=['Adam', 'SGD'],
                   help='optimization method.')
 flags.DEFINE_enum(name='scheduler', default='',
-                  enum_values=['', 'linear', 'step', 'cosine'],
+                  enum_values=['', 'linear', 'step', 'cosine', 'plateau'],
                   help='learning rate scheduler.')
 flags.DEFINE_float(name='learning_rate', default=0.0001,
                    help='learning rate.')

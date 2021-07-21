@@ -99,6 +99,11 @@ class BaseTrain(object):
         elif self.hp.optimizer == 'Adam':
             optimizer = optim.Adam(model_params,
                                    lr=self.hp.learning_rate)
+        elif self.hp.optimizer == 'SGD':
+            optimizer = torch.optim.SGD(model_params,
+                                        lr=self.hp.learning_rate,
+                                        momentum=0.9,
+                                        weight_decay=self.hp.weight_decay)
         else:
             raise ValueError(f'{self.hp.optimizer} not supported')
 
@@ -125,6 +130,14 @@ class BaseTrain(object):
             scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer,
                                                              T_max=self.hp.num_epoch,
                                                              eta_min=0.01*self.hp.learning_rate)
+        elif self.hp.scheduler == 'plateau':
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,
+                                                             'min',
+                                                             factor=0.1,
+                                                             patience=5,
+                                                             threshold=0.0001,
+                                                             min_lr=0,
+                                                             eps=1e-08)
         else:
             raise ValueError(f'{self.hp.scheduler} not supported')
 

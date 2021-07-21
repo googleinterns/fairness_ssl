@@ -266,11 +266,12 @@ class ImageFromMemory(torch.utils.data.Dataset):
   """Creates a custom dataset for imaging data
   """
   
-  def __init__(self, filename, target, control, data_dir):
+  def __init__(self, filename, target, control, data_dir, transform=None):
     self.filename = filename
     self.target = target
     self.control = control
     self.data_dir = data_dir
+    self.transform = transform
     
   def __len__(self):
     return self.filename.shape[0]
@@ -282,14 +283,8 @@ class ImageFromMemory(torch.utils.data.Dataset):
     img_filename = os.path.join(self.data_dir, self.filename[idx])
     img = Image.open(img_filename).convert('RGB')
 
-    '''
-    # Figure out split and transform accordingly
-    if self.split_array[idx] == self.split_dict['train'] and self.train_transform:
-      img = self.train_transform(img)
-    elif (self.split_array[idx] in [self.split_dict['val'], self.split_dict['test']] and
-          self.eval_transform):
-      img = self.eval_transform(img)
-    '''
+    if self.transform is not None:
+      img = self.transform(img)
     
     x = img
 

@@ -271,11 +271,13 @@ class BaseTrain(object):
         if updatelog: self.logf.write(message+'\n')
         for p in ['train', 'val', 'test']:
             string_to_print = f'[{self.epoch}/{self.hp.num_epoch}] {p: <7} \n'
+            min_acc, max_acc = float('inf'), -float('inf')
             for cid in range(-1, self.dset.n_controls):
                 m = 'acc'
                 score = self.metrics_dict[f'{p}.{m}.{cid}'].get_avg()
                 string_to_print += f' {m} group{cid} {score:.4f}'
-
+                min_acc, max_acc = min(min_acc, score), max(max_acc, score)
+                
                 m = 'auc'
                 score = MetricsEval().roc_auc(self.metrics_dict[f'{p}.y_score.{cid}'],\
                                               self.metrics_dict[f'{p}.y_true.{cid}'])
@@ -285,12 +287,8 @@ class BaseTrain(object):
             if updatelog: self.logf.write(string_to_print+'\n')
                 
             # TODO update the assertion for multiple groups
-            assert ((self.metrics_dict[f'{p}.acc.0'].get_avg() \
-                     <= self.metrics_dict[f'{p}.acc.-1'].get_avg() \
-                     <= self.metrics_dict[f'{p}.acc.1'].get_avg()) or
-                    (self.metrics_dict[f'{p}.acc.1'].get_avg() \
-                     <= self.metrics_dict[f'{p}.acc.-1'].get_avg() \
-                     <= self.metrics_dict[f'{p}.acc.0'].get_avg())), "Accuracy Trend incorrect"
+            assert ((min_acc <= self.metrics_dict[f'{p}.acc.-1'].get_avg() <= max_acc) \
+                    or (min_acc <= self.metrics_dict[f'{p}.acc.-1'].get_avg() <= max_acc)), "Accuracy Trend incorrect"
             
         # Tensorboards.
         for p in ['train', 'val', 'test']:

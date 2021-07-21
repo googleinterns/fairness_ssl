@@ -20,6 +20,7 @@ from data.tabular import Tabular
 from data.waterbirds import Waterbirds
 
 from model.fullyconn import FullyConnected
+from torchvision.models import resnet50 as ResNet50
 
 from util.utils import HParams, AverageMeter
 
@@ -66,12 +67,16 @@ class BaseTrain(object):
 
         return train_loader, val_loader, test_loader, dset
 
-    def get_model(self, input_dim):
+    def get_model(self, input_dim, n_targets):
         """Gets model."""
 
         if self.hp.model_type == 'fullyconn':
             model = FullyConnected(input_dim=input_dim, latent_dim=self.hp.latent_dim)
-
+        elif self.hp.model_type == 'resnet50':
+            model = ResNet50(pretrained=True) # default model is pretrained
+            last_dim = model.fc.in_features
+            model.fc = nn.Linear(last_dim, n_targets)
+            
         # Print model summary.
         # print(summary(model, input_dim, show_input=False))
 
@@ -222,7 +227,8 @@ class BaseTrain(object):
         # Model architecture (using DataParallel).
         dummy_x, _, _ = self.dset.train_set.__getitem__(0)
         input_dim = dummy_x.size(0)
-        self.model = self.get_model(input_dim)
+        n_targets = self.dset.n_targets
+        self.model = self.get_model(input_dim, n_targets)
 
         # Optimizer and Scheduler.
         self.optimizer = self.get_optimizer(self.model.parameters())

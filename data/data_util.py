@@ -288,5 +288,5 @@ class ImageFromMemory(torch.utils.data.Dataset):
     
     x = img
 
-    return x, y, c
+    return torch.tensor(x).float(), torch.tensor(y).long(), torch.tensor(c).long()
   

@@ -71,15 +71,14 @@ class BaseTrain(object):
         """Gets model."""
 
         if self.hp.model_type == 'fullyconn':
-            model = FullyConnected(input_dim=input_dim, latent_dim=self.hp.latent_dim)
+            model = FullyConnected(input_dim=input_dim,\
+                                   latent_dim=self.hp.latent_dim,
+                                   n_targets=n_targets)
         elif self.hp.model_type == 'resnet50':
             model = ResNet50(pretrained=True) # default model is pretrained
             last_dim = model.fc.in_features
-            model.fc = nn.Linear(last_dim, n_targets)
+            model.fc = torch.nn.Linear(last_dim, n_targets)
             
-        # Print model summary.
-        # print(summary(model, input_dim, show_input=False))
-
         # Cast to CUDA if GPUs are available.
         if self.hp.flag_usegpu and torch.cuda.is_available():
             print('cuda device count: ', torch.cuda.device_count())
@@ -242,7 +241,8 @@ class BaseTrain(object):
         input_dim = dummy_x.size(0)
         n_targets = self.dset.n_targets
         self.model = self.get_model(input_dim, n_targets)
-
+        #print(summary(self.model, dummy_x, show_input=False))
+        
         # Optimizer and Scheduler.
         self.optimizer = self.get_optimizer(self.model.parameters())
         self.scheduler = self.get_scheduler(self.optimizer)
@@ -290,7 +290,7 @@ class BaseTrain(object):
                 score = self.metrics_dict[f'{p}.{m}.{cid}'].get_avg()
                 string_to_print += f' {m} group{cid} {score:.4f}'
                 min_acc, max_acc = min(min_acc, score), max(max_acc, score)
-                
+
                 m = 'auc'
                 score = MetricsEval().roc_auc(self.metrics_dict[f'{p}.y_score.{cid}'],\
                                               self.metrics_dict[f'{p}.y_true.{cid}'])

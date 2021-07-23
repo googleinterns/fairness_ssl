@@ -60,19 +60,19 @@ class Waterbirds(object):
         train_transform, eval_transform = self.get_transforms()
 
         # Create Torch Custom Datasets
-        self.train_set = data_util.ImageFromMemory(filename=fn_train, \
+        self.train_set = data_util.ImageFromDisk(filename=fn_train, \
                                                    target=y_train, \
                                                    control=c_train,
                                                    data_dir=self.data_dir,
                                                    transform=train_transform)
         
-        self.val_set = data_util.ImageFromMemory(filename=fn_valid, \
+        self.val_set = data_util.ImageFromDisk(filename=fn_valid, \
                                                  target=y_valid, \
                                                  control=c_valid,
                                                  data_dir=self.data_dir,
                                                  transform=eval_transform)
         
-        self.test_set = data_util.ImageFromMemory(filename=fn_test, \
+        self.test_set = data_util.ImageFromDisk(filename=fn_test, \
                                                   target=y_test, \
                                                   control=c_test,
                                                   data_dir=self.data_dir,
@@ -120,25 +120,21 @@ class Waterbirds(object):
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
-        
+
         eval_transform = transforms.Compose([
-            transforms.RandomResizedCrop(
-                target_resolution,
-                scale=(0.7, 1.0),
-                ratio=(0.75, 1.3333333333333333),
-                interpolation=2),
-            transforms.RandomHorizontalFlip(),
+            transforms.Resize((int(target_resolution[0]*scale), int(target_resolution[1]*scale))),
+            transforms.CenterCrop(target_resolution),
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
-
+        
         return train_transform, eval_transform    
 
     def load_dataset(self,
                      batch_size=64,
                      num_batch_per_epoch=None,
                      num_workers=4,
-                     pin_memory=True,
+                     pin_memory=False,
                      **kwargs):
         """Loads dataset.
     
@@ -160,18 +156,15 @@ class Waterbirds(object):
         train_loader = torch.utils.data.DataLoader(self.train_set,
                                                    batch_size=batch_size,
                                                    num_workers=num_workers,
-                                                   pin_memory=pin_memory,
-                                                   shuffle=True)
+                                                   shuffle=True, drop_last=True)
         val_loader = torch.utils.data.DataLoader(self.val_set,
                                                  batch_size=batch_size,
                                                  num_workers=num_workers,
-                                                 pin_memory=pin_memory,
-                                                 shuffle=False)
+                                                 shuffle=False, drop_last=False)
         test_loader = torch.utils.data.DataLoader(self.test_set,
                                                   batch_size=batch_size,
                                                   num_workers=num_workers,
-                                                  pin_memory=pin_memory,
-                                                  shuffle=False)
+                                                  shuffle=False, drop_last=False)
         
         return [train_loader, val_loader, test_loader]
     

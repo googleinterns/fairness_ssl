@@ -39,7 +39,7 @@ class ERM(BaseTrain):
         # Compute loss 
         y_logit = self.model(x)
         y_pred = torch.argmax(y_logit, 1)
-        
+
         loss = F.cross_entropy(y_logit, y)
 
         # Compute gradient.

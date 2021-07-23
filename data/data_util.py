@@ -262,7 +262,7 @@ class ArrayFromMemory(torch.utils.data.Dataset):
     c = int(self.control[index])
     return torch.tensor(x).float(), torch.tensor(y).long(), torch.tensor(c).long()    
 
-class ImageFromMemory(torch.utils.data.Dataset):
+class ImageFromDisk(torch.utils.data.Dataset):
   """Creates a custom dataset for imaging data
   """
   
@@ -288,5 +288,5 @@ class ImageFromMemory(torch.utils.data.Dataset):
     
     x = img
 
-    return torch.tensor(x).float(), torch.tensor(y).long(), torch.tensor(c).long()
+    return x, torch.tensor(y).long(), torch.tensor(c).long()
   

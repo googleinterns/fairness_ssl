@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 from sklearn.metrics import roc_auc_score
+import numpy as np
 
 import pdb
 
@@ -30,6 +31,9 @@ class MetricsEval(object):
         return acc.item()
 
     def roc_auc(self, y_score, y_true):
+        # TODO: Temporary fix
+        if len(np.unique(y_true)) < 2:
+            return 0
         return roc_auc_score(y_true, y_score)
 
     def logit2prob(self, logits):

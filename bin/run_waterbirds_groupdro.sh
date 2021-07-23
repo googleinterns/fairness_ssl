@@ -1,7 +1,7 @@
 python train_and_eval_loop.py \
        --dataset 'Waterbirds' \
        --model_type 'resnet50' \
-       --method 'erm' \
+       --method 'groupdro' \
        --optimizer 'SGD' \
        --learning_rate 1e-5 \
        --noflag_saveckpt \

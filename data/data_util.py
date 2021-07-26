@@ -5,6 +5,7 @@ from __future__ import print_function
 import gzip
 import os
 
+from PIL import Image
 import numpy as np
 import pandas as pd
 import joblib
@@ -235,7 +236,7 @@ def process_german_data():
 
 
 class ArrayFromMemory(torch.utils.data.Dataset):
-  """Creates a custom dataset
+  """Creates a custom dataset for tabular data
   """
 
   def __init__(self, data, target, control):
@@ -260,4 +261,32 @@ class ArrayFromMemory(torch.utils.data.Dataset):
     y = int(self.target[index])
     c = int(self.control[index])
     return torch.tensor(x).float(), torch.tensor(y).long(), torch.tensor(c).long()    
+
+class ImageFromDisk(torch.utils.data.Dataset):
+  """Creates a custom dataset for imaging data
+  """
+  
+  def __init__(self, filename, target, control, data_dir, transform=None):
+    self.filename = filename
+    self.target = target
+    self.control = control
+    self.data_dir = data_dir
+    self.transform = transform
+    
+  def __len__(self):
+    return self.filename.shape[0]
+
+  def __getitem__(self, idx):
+    y = self.target[idx]
+    c = self.control[idx]
+
+    img_filename = os.path.join(self.data_dir, self.filename[idx])
+    img = Image.open(img_filename).convert('RGB')
+
+    if self.transform is not None:
+      img = self.transform(img)
+    
+    x = img
+
+    return x, torch.tensor(y).long(), torch.tensor(c).long()
   

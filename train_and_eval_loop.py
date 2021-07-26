@@ -17,13 +17,13 @@ import pdb
 
 # Dataset.
 flags.DEFINE_enum(name='dataset', default='Adult',
-                  enum_values=['Adult', 'German', 'Compas', 'LawSchools'],
+                  enum_values=['Adult', 'German', 'Waterbirds'],
                   help='dataset.')
 flags.DEFINE_integer(name='dataseed', default=0,
                      help='random seed for dataset construction.')
 # Model.
 flags.DEFINE_enum(name='model_type', default='fullyconn',
-                  enum_values=['fullyconn', 'resnet'], help='model type.')
+                  enum_values=['fullyconn', 'resnet50'], help='model type.')
 flags.DEFINE_integer(name='latent_dim', default=64,
                      help='latent dims for fully connected network')
 flags.DEFINE_bool(name='flag_usegpu', default=True, help='To use GPU or not')
@@ -35,10 +35,10 @@ flags.DEFINE_enum(name='method', default='erm',
                   help='method.')
 flags.DEFINE_integer(name='seed', default=42, help='random seed for optimizer.')
 flags.DEFINE_enum(name='optimizer', default='Adam',
-                  enum_values=['Adam'],
+                  enum_values=['Adam', 'SGD'],
                   help='optimization method.')
 flags.DEFINE_enum(name='scheduler', default='',
-                  enum_values=['', 'linear', 'step', 'cosine'],
+                  enum_values=['', 'linear', 'step', 'cosine', 'plateau'],
                   help='learning rate scheduler.')
 flags.DEFINE_float(name='learning_rate', default=0.0001,
                    help='learning rate.')

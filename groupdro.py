@@ -50,8 +50,10 @@ class GroupDRO(BaseTrain):
 
         loss_groupdro = control_loss @ self.weights
 
-        self.writer.add_scalar(f'train/weights.0', self.weights[0], self.epoch)                
-        self.writer.add_scalar(f'train/weights.1', self.weights[1], self.epoch)                        
+        # Track GroupDRO weights
+        for i in range(len(self.weights)):
+            self.writer.add_scalar(f'train/weights.{i}', self.weights[i], self.epoch)
+
         return loss_groupdro
     
     def train_step(self, batch):
@@ -71,7 +73,7 @@ class GroupDRO(BaseTrain):
         y_pred = torch.argmax(y_logit, 1)
 
         loss = F.cross_entropy(y_logit, y, reduction='none')
-        control_loss, control_count = self.stats_per_control(loss, c)
+        control_loss, control_count = self.stats_per_control(loss.cpu(), c.cpu())
         loss_groupdro = self.calculate_groupdro_loss(control_loss, control_count)
         
         # Compute gradient.

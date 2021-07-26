@@ -17,8 +17,10 @@ from pytorch_model_summary import summary
 import pdb
 
 from data.tabular import Tabular
+from data.waterbirds import Waterbirds
 
 from model.fullyconn import FullyConnected
+from torchvision.models import resnet50 as ResNet50
 
 from util.utils import HParams, AverageMeter
 
@@ -52,6 +54,8 @@ class BaseTrain(object):
 
         if self.dataset_name in ['German', 'Adult']:
             return Tabular(self.dataset_name, lab_split=self.hp.lab_split)
+        elif self.dataset_name in ['Waterbirds']:
+            return Waterbirds(lab_split=self.hp.lab_split)
         else:
             raise ValueError('Dataset not supported.')
 
@@ -63,15 +67,18 @@ class BaseTrain(object):
 
         return train_loader, val_loader, test_loader, dset
 
-    def get_model(self, input_dim):
+    def get_model(self, input_dim, n_targets):
         """Gets model."""
 
         if self.hp.model_type == 'fullyconn':
-            model = FullyConnected(input_dim=input_dim, latent_dim=self.hp.latent_dim)
-
-        # Print model summary.
-        # print(summary(model, input_dim, show_input=False))
-
+            model = FullyConnected(input_dim=input_dim,\
+                                   latent_dim=self.hp.latent_dim,
+                                   n_targets=n_targets)
+        elif self.hp.model_type == 'resnet50':
+            model = ResNet50(pretrained=True) # default model is pretrained
+            last_dim = model.fc.in_features
+            model.fc = torch.nn.Linear(last_dim, n_targets)
+            
         # Cast to CUDA if GPUs are available.
         if self.hp.flag_usegpu and torch.cuda.is_available():
             print('cuda device count: ', torch.cuda.device_count())
@@ -91,6 +98,11 @@ class BaseTrain(object):
         elif self.hp.optimizer == 'Adam':
             optimizer = optim.Adam(model_params,
                                    lr=self.hp.learning_rate)
+        elif self.hp.optimizer == 'SGD':
+            optimizer = torch.optim.SGD(model_params,
+                                        lr=self.hp.learning_rate,
+                                        momentum=0.9,
+                                        weight_decay=self.hp.weight_decay)
         else:
             raise ValueError(f'{self.hp.optimizer} not supported')
 
@@ -117,6 +129,14 @@ class BaseTrain(object):
             scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer,
                                                              T_max=self.hp.num_epoch,
                                                              eta_min=0.01*self.hp.learning_rate)
+        elif self.hp.scheduler == 'plateau':
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,
+                                                             'min',
+                                                             factor=0.1,
+                                                             patience=5,
+                                                             threshold=0.0001,
+                                                             min_lr=0,
+                                                             eps=1e-08)
         else:
             raise ValueError(f'{self.hp.scheduler} not supported')
 
@@ -219,8 +239,10 @@ class BaseTrain(object):
         # Model architecture (using DataParallel).
         dummy_x, _, _ = self.dset.train_set.__getitem__(0)
         input_dim = dummy_x.size(0)
-        self.model = self.get_model(input_dim)
-
+        n_targets = self.dset.n_targets
+        self.model = self.get_model(input_dim, n_targets)
+        #print(summary(self.model, dummy_x, show_input=False))
+        
         # Optimizer and Scheduler.
         self.optimizer = self.get_optimizer(self.model.parameters())
         self.scheduler = self.get_scheduler(self.optimizer)
@@ -262,10 +284,12 @@ class BaseTrain(object):
         if updatelog: self.logf.write(message+'\n')
         for p in ['train', 'val', 'test']:
             string_to_print = f'[{self.epoch}/{self.hp.num_epoch}] {p: <7} \n'
+            min_acc, max_acc = float('inf'), -float('inf')
             for cid in range(-1, self.dset.n_controls):
                 m = 'acc'
                 score = self.metrics_dict[f'{p}.{m}.{cid}'].get_avg()
                 string_to_print += f' {m} group{cid} {score:.4f}'
+                min_acc, max_acc = min(min_acc, score), max(max_acc, score)
 
                 m = 'auc'
                 score = MetricsEval().roc_auc(self.metrics_dict[f'{p}.y_score.{cid}'],\
@@ -276,12 +300,8 @@ class BaseTrain(object):
             if updatelog: self.logf.write(string_to_print+'\n')
                 
             # TODO update the assertion for multiple groups
-            assert ((self.metrics_dict[f'{p}.acc.0'].get_avg() \
-                     <= self.metrics_dict[f'{p}.acc.-1'].get_avg() \
-                     <= self.metrics_dict[f'{p}.acc.1'].get_avg()) or
-                    (self.metrics_dict[f'{p}.acc.1'].get_avg() \
-                     <= self.metrics_dict[f'{p}.acc.-1'].get_avg() \
-                     <= self.metrics_dict[f'{p}.acc.0'].get_avg())), "Accuracy Trend incorrect"
+            assert ((min_acc <= self.metrics_dict[f'{p}.acc.-1'].get_avg() <= max_acc) \
+                    or (min_acc <= self.metrics_dict[f'{p}.acc.-1'].get_avg() <= max_acc)), "Accuracy Trend incorrect"
             
         # Tensorboards.
         for p in ['train', 'val', 'test']:
@@ -338,6 +358,7 @@ class BaseTrain(object):
         self.model.train()
         for batch in self.train_loader:
             self.train_step(batch)
+            if self.hp.flag_debug: break
 
     def train_epoch_begin(self):
         """Calls at the beginning of the epoch."""
@@ -387,7 +408,8 @@ class BaseTrain(object):
         self.reset_metrics_dict(prefix=prefix)
         for batch in data_loader:
             self.eval_step(batch, prefix=prefix)
-
+            if self.hp.flag_debug: break
+            
         return self.metrics_dict[f'{prefix}.acc.-1'].get_avg()
 
     def eval_step(self, batch, prefix='test'):

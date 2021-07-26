@@ -11,7 +11,7 @@ class FullyConnected(nn.Module):
     """
     A simple four layered neural network predicting the target attributes
     """
-    def __init__(self, input_dim=121, latent_dim=64):
+    def __init__(self, input_dim=121, latent_dim=64, n_targets=2):
         super(FullyConnected, self).__init__()
         
         self.latent_dim = latent_dim
@@ -23,7 +23,7 @@ class FullyConnected(nn.Module):
 
         # y-predictor
         self.fc3 = nn.Linear(self.latent_dim, hidden_dim)
-        self.fc4 = nn.Linear(hidden_dim, 2)          
+        self.fc4 = nn.Linear(hidden_dim, n_targets)          
         self.relu = nn.ReLU()
 
     def encode(self, x):

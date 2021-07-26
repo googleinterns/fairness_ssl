@@ -55,12 +55,16 @@ class Tabular(object):
         valid_data, valid_target, valid_control,\
         test_data, test_target, test_control = \
           data_util.process_adult_data()
-      
     elif dataset_name == 'German':
       train_data, train_target, train_control,\
         valid_data, valid_target, valid_control,\
         test_data, test_target, test_control = \
           data_util.process_german_data()
+    elif dataset_name == 'AdultConfounded':
+      train_data, train_target, train_control,\
+        valid_data, valid_target, valid_control,\
+        test_data, test_target, test_control = \
+          data_util.process_adultconf_data()
     else:
       raise NotImplementedError
 

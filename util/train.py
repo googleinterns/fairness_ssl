@@ -52,7 +52,7 @@ class BaseTrain(object):
     def get_dataset(self):
         """Gets dataset."""
 
-        if self.dataset_name in ['German', 'Adult']:
+        if self.dataset_name in ['German', 'Adult', 'AdultConfounded']:
             return Tabular(self.dataset_name, lab_split=self.hp.lab_split)
         elif self.dataset_name in ['Waterbirds']:
             return Waterbirds(lab_split=self.hp.lab_split)
@@ -358,7 +358,7 @@ class BaseTrain(object):
         self.model.train()
         for batch in self.train_loader:
             self.train_step(batch)
-            if self.hp.flag_debug: break
+            if self.hp.flag_singlebatch: break
 
     def train_epoch_begin(self):
         """Calls at the beginning of the epoch."""
@@ -408,7 +408,7 @@ class BaseTrain(object):
         self.reset_metrics_dict(prefix=prefix)
         for batch in data_loader:
             self.eval_step(batch, prefix=prefix)
-            if self.hp.flag_debug: break
+            if self.hp.flag_singlebatch: break
             
         return self.metrics_dict[f'{prefix}.acc.-1'].get_avg()
 

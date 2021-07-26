@@ -17,7 +17,7 @@ import pdb
 
 # Dataset.
 flags.DEFINE_enum(name='dataset', default='Adult',
-                  enum_values=['Adult', 'German', 'Waterbirds'],
+                  enum_values=['Adult', 'German', 'Waterbirds', 'AdultConfounded'],
                   help='dataset.')
 flags.DEFINE_integer(name='dataseed', default=0,
                      help='random seed for dataset construction.')
@@ -57,6 +57,7 @@ flags.DEFINE_string(name='ckpt_path', default='',
 
 # Debug mode.
 flags.DEFINE_bool(name='flag_debug', default=False, help='Enables Debug Mode')
+flags.DEFINE_bool(name='flag_singlebatch', default=False, help='Enables Debug Mode')
 
 # DRO hyper-params
 flags.DEFINE_float(name='groupdro_stepsize', default=0.01,

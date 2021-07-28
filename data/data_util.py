@@ -184,7 +184,6 @@ def process_adultconf_data():
   all_data = pd.concat([train_data,test_data])
   all_data = pd.get_dummies(all_data,\
     columns=[ADULT_ALL_COL_NAMES[i] for i in ADULT_SELECT_COL_INDEX])
-  pdb.set_trace()
   
   all_data.loc[all_data.income == ">50K","income"] = 1
   all_data.loc[all_data.income == ">50K.","income"] = 1
@@ -194,9 +193,9 @@ def process_adultconf_data():
   all_data.loc[all_data.sex == "Female","sex"] = 1
   all_data.loc[all_data.sex == "Male","sex"] = 0
 
+  all_data.loc[all_data.race != "Black","race"] = 0  
   all_data.loc[all_data.race == "Black","race"] = 1
-  all_data.loc[all_data.race != "Black","race"] = 0
-  
+
   # Create Training and Test Splits
   cutoff = train_data.shape[0]
   train_data = all_data.loc[:cutoff, (all_data.columns != "income") &\
@@ -212,7 +211,7 @@ def process_adultconf_data():
   test_control = all_data.loc[:cutoff, (all_data.columns == "sex") |\
                                (all_data.columns == "race")]
   test_target = all_data.loc[cutoff:,all_data.columns == "income"]
-
+  
   # Filter invalid columns
   col_valid_in_train_data =\
      [len(train_data.loc[:,x].unique()) > 1 for x in train_data.columns]
@@ -231,6 +230,7 @@ def process_adultconf_data():
   train_target = train_target.loc[:cutoff,:]
 
   val_control = train_control.loc[cutoff:,:]
+  pdb.set_trace()
   train_control = train_control.loc[:cutoff,:]
 
   # Normalize the Training dataset

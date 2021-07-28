@@ -161,18 +161,18 @@ def process_adultconf_data():
   """
 
   # Load the dataset
-  ADULT_ALL_COL_NAMES =  ["age", "workclass", "fnlwgt", "education", \
-                          "education-num", "marital-status", "occupation",\
-                          "relationship", "race", "sex", "capital-gain",\
-                           "capital-loss", "hours-per-week", "native-country",\
-                           "income" ]
+  ADULT_ALL_COL_NAMES =  {0: "age", 1: "workclass", 2: "fnlwgt", 3: "education", \
+                          4: "education-num", 5: "marital-status", 6: "occupation",\
+                          7: "relationship", 8: "race", 9: "sex", 10: "capital-gain",\
+                          11:  "capital-loss", 12: "hours-per-week", 13: "native-country",\
+                           14: "income" }
   train_data = pd.read_table(\
     os.path.join(DATA_DIRECTORY + "raw", "adult.data"),\
-    delimiter=", ", header=None, names=ADULT_ALL_COL_NAMES,
+    delimiter=", ", header=None, names=ADULT_ALL_COL_NAMES.values(),
     na_values="?",keep_default_na=False)
   test_data = pd.read_table(\
     os.path.join(DATA_DIRECTORY + "raw", "adult.test"),\
-    delimiter=", ", header=None, names=ADULT_ALL_COL_NAMES,
+    delimiter=", ", header=None, names=ADULT_ALL_COL_NAMES.values(),
     na_values="?",keep_default_na=False, skiprows=1)
 
   # Drop empty entries
@@ -180,10 +180,12 @@ def process_adultconf_data():
   test_data.dropna(inplace=True)
 
   # Binarize the attributes
-  ADULT_SELECT_COL_INDEX =  [1,3,5,6,7,8,13]
+  ADULT_SELECT_COL_INDEX =  [1,3,5,6,7,13]
   all_data = pd.concat([train_data,test_data])
   all_data = pd.get_dummies(all_data,\
     columns=[ADULT_ALL_COL_NAMES[i] for i in ADULT_SELECT_COL_INDEX])
+  pdb.set_trace()
+  
   all_data.loc[all_data.income == ">50K","income"] = 1
   all_data.loc[all_data.income == ">50K.","income"] = 1
   all_data.loc[all_data.income == "<=50K","income"] = 0
@@ -192,16 +194,23 @@ def process_adultconf_data():
   all_data.loc[all_data.sex == "Female","sex"] = 1
   all_data.loc[all_data.sex == "Male","sex"] = 0
 
+  all_data.loc[all_data.race == "Black","race"] = 1
+  all_data.loc[all_data.race != "Black","race"] = 0
+  
   # Create Training and Test Splits
   cutoff = train_data.shape[0]
-  train_data = all_data.loc[:cutoff,\
-    (all_data.columns != "income") & (all_data.columns != "sex")]
-  train_control = all_data.loc[:cutoff,all_data.columns == "sex"]
+  train_data = all_data.loc[:cutoff, (all_data.columns != "income") &\
+                            (all_data.columns != "sex") &\
+                            (all_data.columns != "race")]
+  train_control = all_data.loc[:cutoff, (all_data.columns == "sex") |\
+                               (all_data.columns == "race")]
   train_target = all_data.loc[:cutoff,all_data.columns == "income"]
 
-  test_data = all_data.loc[cutoff:,\
-    (all_data.columns != "income") & (all_data.columns != "sex")]
-  test_control = all_data.loc[cutoff:,all_data.columns == "sex"]
+  test_data = all_data.loc[cutoff:, (all_data.columns != "income") &\
+                           (all_data.columns != "sex") &\
+                           (all_data.columns != "race")]
+  test_control = all_data.loc[:cutoff, (all_data.columns == "sex") |\
+                               (all_data.columns == "race")]
   test_target = all_data.loc[cutoff:,all_data.columns == "income"]
 
   # Filter invalid columns

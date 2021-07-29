@@ -208,7 +208,7 @@ def process_adultconf_data():
   test_data = all_data.loc[cutoff:, (all_data.columns != "income") &\
                            (all_data.columns != "sex") &\
                            (all_data.columns != "race")]
-  test_control = all_data.loc[:cutoff, (all_data.columns == "sex") |\
+  test_control = all_data.loc[cutoff:, (all_data.columns == "sex") |\
                                (all_data.columns == "race")]
   test_target = all_data.loc[cutoff:,all_data.columns == "income"]
   
@@ -230,7 +230,6 @@ def process_adultconf_data():
   train_target = train_target.loc[:cutoff,:]
 
   val_control = train_control.loc[cutoff:,:]
-  pdb.set_trace()
   train_control = train_control.loc[:cutoff,:]
 
   # Normalize the Training dataset
@@ -381,4 +380,23 @@ class ImageFromDisk(torch.utils.data.Dataset):
     x = img
 
     return x, torch.tensor(y).long(), torch.tensor(c).long()
+  
+def resample(data, target, control, n_controls = 4, seed=42, probs = [0.94, 0.06, 0.94, 0.06]):
+  for cid in range(n_controls):
+    pdb.set_trace()
+    data_sub = data[control == cid]
+    target_sub = target[control == cid]
+    control_sub = control[control == cid]
+
+    count_cid_old = np.bincount(target_sub.squeeze(-1)).astype(float)
+    probs_cid_old = count_cid_old / count_cid_old.sum()
+    probs_cid = np.array([1-probs[cid], probs[cid]])
+
+    indices = np.random.choice(np.arange(len(data_sub), size=len(data_sub), p=probs_cid/probs_cid_old))
+    data[control == cid] = data_sub[indices]
+    target[control == cid] = target_sub[indices]
+    control[control == cid] = control_sub[indices]    
+
+  return data, target, control
+      
   

@@ -88,7 +88,23 @@ class Tabular(object):
       train_data, train_target, train_control = data_util.resample(train_data, train_target, train_control,
                                                          n_controls=4, seed=self.dataseed,
                                                          probs=[0.94, 0.06, 0.94, 0.06])
+
+      valid_data, valid_target, valid_control = data_util.resample(valid_data, valid_target, valid_control,
+                                                         n_controls=4, seed=self.dataseed,
+                                                         probs=[0.06, 0.94, 0.06, 0.94])
       
+      test_data, test_target, test_control = data_util.resample(test_data, test_target, test_control,
+                                                         n_controls=4, seed=self.dataseed,
+                                                         probs=[0.06, 0.94, 0.06, 0.94])
+
+      # Stats after sampling
+      print('Pr(y=1/g) after resampling')
+      for cid in range(n_controls):
+        for prefix in ['train', 'valid', 'test']:
+          print(f'{prefix}-control{cid}',
+                eval(f'sum(({prefix}_target.squeeze(-1) == 1) & ({prefix}_control == {cid})) / sum({prefix}_control == {cid})' ))
+
+      pdb.set_trace()
           
     else:
       raise NotImplementedError

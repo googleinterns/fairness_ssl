@@ -383,19 +383,22 @@ class ImageFromDisk(torch.utils.data.Dataset):
   
 def resample(data, target, control, n_controls = 4, seed=42, probs = [0.94, 0.06, 0.94, 0.06]):
   for cid in range(n_controls):
-    pdb.set_trace()
-    data_sub = data[control == cid]
-    target_sub = target[control == cid]
-    control_sub = control[control == cid]
+    indices_sub = control == cid
+    data_sub = data[indices_sub]
+    target_sub = target[indices_sub]
+    control_sub = control[indices_sub]
 
-    count_cid_old = np.bincount(target_sub.squeeze(-1)).astype(float)
+    count_cid_old = np.bincount(target_sub.squeeze(-1).astype(int)).astype(float)
     probs_cid_old = count_cid_old / count_cid_old.sum()
-    probs_cid = np.array([1-probs[cid], probs[cid]])
+    probs_cid_new = np.array([1-probs[cid], probs[cid]])
 
-    indices = np.random.choice(np.arange(len(data_sub), size=len(data_sub), p=probs_cid/probs_cid_old))
-    data[control == cid] = data_sub[indices]
-    target[control == cid] = target_sub[indices]
-    control[control == cid] = control_sub[indices]    
+    sampling_prob = probs_cid_new[target_sub.squeeze(-1).astype(int)].astype(float) \
+      / probs_cid_old[target_sub.squeeze(-1).astype(int)].astype(float)
+    sampling_prob = sampling_prob / sampling_prob.sum()
+    sampling_indices = np.random.choice(np.arange(len(data_sub)), size=len(data_sub), p=sampling_prob)
+    data[indices_sub] = data_sub[sampling_indices]
+    target[indices_sub] = target_sub[sampling_indices]
+    control[indices_sub] = control_sub[sampling_indices]    
 
   return data, target, control
       

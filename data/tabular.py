@@ -104,8 +104,6 @@ class Tabular(object):
           print(f'{prefix}-control{cid}',
                 eval(f'sum(({prefix}_target.squeeze(-1) == 1) & ({prefix}_control == {cid})) / sum({prefix}_control == {cid})' ))
 
-      pdb.set_trace()
-          
     else:
       raise NotImplementedError
 

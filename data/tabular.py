@@ -51,20 +51,45 @@ class Tabular(object):
     #TODO: Single function for process tabular data
     
     if dataset_name == 'Adult':
+      
       train_data, train_target, train_control,\
         valid_data, valid_target, valid_control,\
         test_data, test_target, test_control = \
           data_util.process_adult_data()
+      
     elif dataset_name == 'German':
+      
       train_data, train_target, train_control,\
         valid_data, valid_target, valid_control,\
         test_data, test_target, test_control = \
           data_util.process_german_data()
+      
     elif dataset_name == 'AdultConfounded':
       train_data, train_target, train_control,\
         valid_data, valid_target, valid_control,\
         test_data, test_target, test_control = \
           data_util.process_adultconf_data()
+
+      # 'race' \times 'sex' is control group
+      # Each of 'race' and 'sex' is binary
+      # 3:Black-Female, 2:Black-Male, 1:NonBlack-Female, 0:NonBlack-Male
+      n_controls = 4
+      train_control = train_control[:, 0]*2  + train_control[:, 1]
+      valid_control = valid_control[:, 0]*2  + valid_control[:, 1]
+      test_control = test_control[:, 0]*2 + test_control[:, 1]      
+
+      # Stats prior to sampling
+      print('Pr(y=1/g) before resampling')
+      for cid in range(n_controls):
+        for prefix in ['train', 'valid', 'test']:
+          print(f'{prefix}-control{cid}',
+                eval(f'sum(({prefix}_target.squeeze(-1) == 1) & ({prefix}_control == {cid})) / sum({prefix}_control == {cid})' ))
+          
+      train_data, train_target, train_control = data_util.resample(train_data, train_target, train_control,
+                                                         n_controls=4, seed=self.dataseed,
+                                                         probs=[0.94, 0.06, 0.94, 0.06])
+      
+          
     else:
       raise NotImplementedError
 

@@ -97,7 +97,8 @@ class BaseTrain(object):
                                       momentum=0.9)
         elif self.hp.optimizer == 'Adam':
             optimizer = optim.Adam(model_params,
-                                   lr=self.hp.learning_rate)
+                                   lr=self.hp.learning_rate,
+                                   weight_decay=self.hp.weight_decay)
         elif self.hp.optimizer == 'SGD':
             optimizer = torch.optim.SGD(model_params,
                                         lr=self.hp.learning_rate,
@@ -197,6 +198,7 @@ class BaseTrain(object):
                   'method', self.__class__.__name__,
                   'optimizer', self.hp.optimizer,
                   'learning_rate', self.hp.learning_rate,
+                  'weight_decay', self.hp.weight_decay,
                   'batch_size', self.hp.batch_size,
                   'seed', self.hp.seed,
                   'latent_dim', self.hp.latent_dim,

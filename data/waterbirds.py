@@ -99,14 +99,11 @@ class Waterbirds(object):
     
         # SSL Setting
         if self.lab_split < 1.0:
-            # TODO: Write logic for SSL setting
-            '''
+            #TODO: check uniform sampling
             np.random.seed(self.dataseed)
-            select = np.random.choice([False, True], size=len(self.c_train),\
+            select = np.random.choice([False, True], size=len(c_train),\
             replace=True, p = [self.lab_split, 1-self.lab_split])
-            self.c_train[select] = DF_M # DF_M denotes that the label is not available      
-            '''
-            pass
+            c_train[select] = DF_M # DF_M denotes that the label is not available      
     
         return (fn_train, fn_valid, fn_test,\
                 y_train, y_valid, y_test,\

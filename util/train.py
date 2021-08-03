@@ -192,7 +192,10 @@ class BaseTrain(object):
             ckpt_path = f'{self.dataset_name}_{self.__class__.__name__}_debug'
         else:
             runTime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            ckpt_path = f'{self.dataset_name}_{self.__class__.__name__}_{runTime}'            
+            ckpt_path = f'{self.dataset_name}_{self.__class__.__name__}'
+            suffix = f'_Partial{int(self.hp.lab_split*100)}' if self.hp.lab_split < 1.0 else ''
+            ckpt_path = ckpt_path + suffix + f'_{runTime}'
+
         self.ckpt_path = ckpt_path
         params = ['dataset', self.dataset_name,
                   'method', self.__class__.__name__,

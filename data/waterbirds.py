@@ -7,6 +7,7 @@ import pandas as pd
 
 import torch
 from torch.utils.data import Dataset
+from torch.utils.data.sampler import WeightedRandomSampler
 import torchvision.transforms as transforms
 
 from data import data_util
@@ -20,12 +21,13 @@ DATA_DIRECTORY = 'data/datasets/waterbirds_dataset/'
 class Waterbirds(object):
     """Waterbirds data loader."""
 
-    def __init__(self, lab_split = 1.0, seed = 42):
+    def __init__(self, lab_split = 1.0, reweight=False, seed = 42):
         print('Using Waterbirds dataset!')
 
         self.data_dir = DATA_DIRECTORY
         self.dataseed = seed
         self.lab_split = lab_split
+        self.reweight = reweight
       
         if not os.path.exists(self.data_dir):
             raise ValueError(f'{self.data_dir} does not exist yet.')
@@ -54,7 +56,7 @@ class Waterbirds(object):
         # Split train, valid, test
         fn_train, fn_valid, fn_test, \
             y_train, y_valid, y_test, \
-            c_train, c_valid, c_test = self.generate_splits()
+            self.c_train, c_valid, c_test = self.generate_splits()
 
         # Get custom transforms
         train_transform, eval_transform = self.get_transforms()
@@ -62,7 +64,7 @@ class Waterbirds(object):
         # Create Torch Custom Datasets
         self.train_set = data_util.ImageFromDisk(filename=fn_train, \
                                                    target=y_train, \
-                                                   control=c_train,
+                                                   control=self.c_train,
                                                    data_dir=self.data_dir,
                                                    transform=train_transform)
         
@@ -97,14 +99,11 @@ class Waterbirds(object):
     
         # SSL Setting
         if self.lab_split < 1.0:
-            # TODO: Write logic for SSL setting
-            '''
+            #TODO: check uniform sampling
             np.random.seed(self.dataseed)
-            select = np.random.choice([False, True], size=len(self.c_train),\
+            select = np.random.choice([False, True], size=len(c_train),\
             replace=True, p = [self.lab_split, 1-self.lab_split])
-            self.c_train[select] = DF_M # DF_M denotes that the label is not available      
-            '''
-            pass
+            c_train[select] = DF_M # DF_M denotes that the label is not available      
     
         return (fn_train, fn_valid, fn_test,\
                 y_train, y_valid, y_test,\
@@ -151,12 +150,23 @@ class Waterbirds(object):
         del kwargs
 
         # Generate DataLoaders
-        #TODO: check weightedrandomsample
+        if self.reweight:
+            self.c_train = torch.LongTensor(self.c_train)
+            c_counts = (torch.arange(self.n_controls).unsqueeze(1)==self.c_train).sum(1).float()
+            c_invprobs = len(self.train_set) / c_counts
+            invprobs = c_invprobs[self.c_train]
+
+            sampler_train = WeightedRandomSampler(invprobs, len(self.train_set), replacement=True)
+            shuffle_train = False
+        else:
+            sampler_train = None
+            shuffle_train = True
     
         train_loader = torch.utils.data.DataLoader(self.train_set,
                                                    batch_size=batch_size,
                                                    num_workers=num_workers,
-                                                   shuffle=True, drop_last=True)
+                                                   shuffle=shuffle_train,
+                                                   sampler=sampler_train, drop_last=True)
         val_loader = torch.utils.data.DataLoader(self.val_set,
                                                  batch_size=batch_size,
                                                  num_workers=num_workers,

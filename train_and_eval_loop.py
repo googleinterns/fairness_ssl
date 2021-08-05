@@ -13,11 +13,12 @@ from unsupdro import UnsupDRO
 
 from util.utils import HParams
 
+import os
 import pdb
 
 # Dataset.
 flags.DEFINE_enum(name='dataset', default='Adult',
-                  enum_values=['Adult', 'German', 'Waterbirds'],
+                  enum_values=['Adult', 'German', 'Waterbirds', 'AdultConfounded'],
                   help='dataset.')
 flags.DEFINE_integer(name='dataseed', default=0,
                      help='random seed for dataset construction.')
@@ -27,6 +28,7 @@ flags.DEFINE_enum(name='model_type', default='fullyconn',
 flags.DEFINE_integer(name='latent_dim', default=64,
                      help='latent dims for fully connected network')
 flags.DEFINE_bool(name='flag_usegpu', default=True, help='To use GPU or not')
+flags.DEFINE_string(name='gpu_ids', default='0,1,2,3,4,5,6,7', help='gpu_ids')
 flags.DEFINE_bool(name='flag_saveckpt', default=True, help='To save checkpoints or not')
 
 # Optimization.
@@ -57,10 +59,12 @@ flags.DEFINE_string(name='ckpt_path', default='',
 
 # Debug mode.
 flags.DEFINE_bool(name='flag_debug', default=False, help='Enables Debug Mode')
+flags.DEFINE_bool(name='flag_singlebatch', default=False, help='Enables Debug Mode')
 
 # DRO hyper-params
 flags.DEFINE_float(name='groupdro_stepsize', default=0.01,
                    help='soft penalty step size.')
+flags.DEFINE_bool(name='flag_reweight', default=False, help='To reweight groups for waterbirds dataset')
 flags.DEFINE_float(name='unsupdro_eta', default=0.9,
                    help='soft penalty step size.')
 
@@ -89,12 +93,16 @@ def get_trainer(hparams):
 
 
 def main(unused_argv):
-
+    
     # Set parameters.
     hparams = HParams({
             flag.name: flag.value for flag in FLAGS.get_flags_for_module('__main__')
         })
-    
+
+    # Select the GPU machine to run the experiment
+    if hparams.flag_usegpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = hparams.gpu_ids # do not import torch
+  
     # Obtain the code for necessary method
     trainer = get_trainer(hparams)
 

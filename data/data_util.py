@@ -152,6 +152,97 @@ def process_adult_data():
     test_data.values, test_target.values, test_control.values
 
 
+def process_adultconf_data():
+  """Process the entries of Adult dataset. Creates the training, 
+  validation and test splits. 
+
+  Target Variable: income
+  Control Variable: sex
+  """
+
+  # Load the dataset
+  ADULT_ALL_COL_NAMES =  {0: "age", 1: "workclass", 2: "fnlwgt", 3: "education", \
+                          4: "education-num", 5: "marital-status", 6: "occupation",\
+                          7: "relationship", 8: "race", 9: "sex", 10: "capital-gain",\
+                          11:  "capital-loss", 12: "hours-per-week", 13: "native-country",\
+                           14: "income" }
+  train_data = pd.read_table(\
+    os.path.join(DATA_DIRECTORY + "raw", "adult.data"),\
+    delimiter=", ", header=None, names=ADULT_ALL_COL_NAMES.values(),
+    na_values="?",keep_default_na=False)
+  test_data = pd.read_table(\
+    os.path.join(DATA_DIRECTORY + "raw", "adult.test"),\
+    delimiter=", ", header=None, names=ADULT_ALL_COL_NAMES.values(),
+    na_values="?",keep_default_na=False, skiprows=1)
+
+  # Drop empty entries
+  train_data.dropna(inplace=True)
+  test_data.dropna(inplace=True)
+
+  # Binarize the attributes
+  ADULT_SELECT_COL_INDEX =  [1,3,5,6,7,13]
+  all_data = pd.concat([train_data,test_data])
+  all_data = pd.get_dummies(all_data,\
+    columns=[ADULT_ALL_COL_NAMES[i] for i in ADULT_SELECT_COL_INDEX])
+  
+  all_data.loc[all_data.income == ">50K","income"] = 1
+  all_data.loc[all_data.income == ">50K.","income"] = 1
+  all_data.loc[all_data.income == "<=50K","income"] = 0
+  all_data.loc[all_data.income == "<=50K.","income"] = 0
+
+  all_data.loc[all_data.sex == "Female","sex"] = 1
+  all_data.loc[all_data.sex == "Male","sex"] = 0
+
+  all_data.loc[all_data.race != "Black","race"] = 0  
+  all_data.loc[all_data.race == "Black","race"] = 1
+
+  # Create Training and Test Splits
+  cutoff = train_data.shape[0]
+  train_data = all_data.loc[:cutoff, (all_data.columns != "income") &\
+                            (all_data.columns != "sex") &\
+                            (all_data.columns != "race")]
+  train_control = all_data.loc[:cutoff, (all_data.columns == "sex") |\
+                               (all_data.columns == "race")]
+  train_target = all_data.loc[:cutoff,all_data.columns == "income"]
+
+  test_data = all_data.loc[cutoff:, (all_data.columns != "income") &\
+                           (all_data.columns != "sex") &\
+                           (all_data.columns != "race")]
+  test_control = all_data.loc[cutoff:, (all_data.columns == "sex") |\
+                               (all_data.columns == "race")]
+  test_target = all_data.loc[cutoff:,all_data.columns == "income"]
+  
+  # Filter invalid columns
+  col_valid_in_train_data =\
+     [len(train_data.loc[:,x].unique()) > 1 for x in train_data.columns]
+  col_valid_in_test_data =\
+     [len(test_data.loc[:,x].unique()) > 1 for x in test_data.columns]
+  col_valid = list(map(lambda x,y: x and y, col_valid_in_train_data, col_valid_in_test_data))
+  train_data = train_data.loc[:,col_valid]
+  test_data = test_data.loc[:,col_valid]
+
+  # Sample Validation dataset
+  cutoff = int((1.0 - ADULT_VALIDATION_SPLIT) * train_data.shape[0])
+  val_data = train_data.loc[cutoff:,:]
+  train_data = train_data.loc[:cutoff,:]
+
+  val_target = train_target.loc[cutoff:,:]
+  train_target = train_target.loc[:cutoff,:]
+
+  val_control = train_control.loc[cutoff:,:]
+  train_control = train_control.loc[:cutoff,:]
+
+  # Normalize the Training dataset
+  maxes = train_data.max(axis=0)
+
+  train_data = train_data / maxes
+  test_data = test_data / maxes
+  val_data = val_data / maxes
+
+  return train_data.values, train_target.values, train_control.values,\
+    val_data.values, val_target.values, val_control.values,\
+    test_data.values, test_target.values, test_control.values
+
 def process_german_data():
   """Process the entries of German dataset. Creates the training, 
   validation and test splits. 
@@ -289,4 +380,26 @@ class ImageFromDisk(torch.utils.data.Dataset):
     x = img
 
     return x, torch.tensor(y).long(), torch.tensor(c).long()
+  
+def resample(data, target, control, n_controls = 4, seed=42, probs = [0.94, 0.06, 0.94, 0.06]):
+  for cid in range(n_controls):
+    indices_sub = control == cid
+    data_sub = data[indices_sub]
+    target_sub = target[indices_sub]
+    control_sub = control[indices_sub]
+
+    count_cid_old = np.bincount(target_sub.squeeze(-1).astype(int)).astype(float)
+    probs_cid_old = count_cid_old / count_cid_old.sum()
+    probs_cid_new = np.array([1-probs[cid], probs[cid]])
+
+    sampling_prob = probs_cid_new[target_sub.squeeze(-1).astype(int)].astype(float) \
+      / probs_cid_old[target_sub.squeeze(-1).astype(int)].astype(float)
+    sampling_prob = sampling_prob / sampling_prob.sum()
+    sampling_indices = np.random.choice(np.arange(len(data_sub)), size=len(data_sub), p=sampling_prob)
+    data[indices_sub] = data_sub[sampling_indices]
+    target[indices_sub] = target_sub[sampling_indices]
+    control[indices_sub] = control_sub[sampling_indices]    
+
+  return data, target, control
+      
   

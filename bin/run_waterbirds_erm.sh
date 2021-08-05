@@ -7,5 +7,4 @@ python train_and_eval_loop.py \
        --noflag_saveckpt \
        --batch_size 128 \
        --num_epoch 300 \
-       --learning_rate 0.001 \
        --weight_decay 1.0 

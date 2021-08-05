@@ -1,6 +1,6 @@
-import torch
-import math
+# Non-torch methods
 
+import math
 import pdb
 
 DEFAULT_MISSING_CONST = -42

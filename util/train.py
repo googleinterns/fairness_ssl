@@ -55,7 +55,7 @@ class BaseTrain(object):
         if self.dataset_name in ['German', 'Adult', 'AdultConfounded']:
             return Tabular(self.dataset_name, lab_split=self.hp.lab_split)
         elif self.dataset_name in ['Waterbirds']:
-            return Waterbirds(lab_split=self.hp.lab_split)
+            return Waterbirds(lab_split=self.hp.lab_split, reweight=self.hp.flag_reweight)
         else:
             raise ValueError('Dataset not supported.')
 
@@ -81,7 +81,7 @@ class BaseTrain(object):
             
         # Cast to CUDA if GPUs are available.
         if self.hp.flag_usegpu and torch.cuda.is_available():
-            print('cuda device count: ', torch.cuda.device_count())
+            print('cuda device count: ', torch.cuda.device_count())            
             model = torch.nn.DataParallel(model)
             model = model.cuda()
 
@@ -192,7 +192,10 @@ class BaseTrain(object):
             ckpt_path = f'{self.dataset_name}_{self.__class__.__name__}_debug'
         else:
             runTime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            ckpt_path = f'{self.dataset_name}_{self.__class__.__name__}_{runTime}'            
+            ckpt_path = f'{self.dataset_name}_{self.__class__.__name__}'
+            suffix = f'_Partial{int(self.hp.lab_split*100)}' if self.hp.lab_split < 1.0 else ''
+            ckpt_path = ckpt_path + suffix + f'_{runTime}'
+
         self.ckpt_path = ckpt_path
         params = ['dataset', self.dataset_name,
                   'method', self.__class__.__name__,
@@ -202,7 +205,8 @@ class BaseTrain(object):
                   'batch_size', self.hp.batch_size,
                   'seed', self.hp.seed,
                   'latent_dim', self.hp.latent_dim,
-                  'lab_split', self.hp.lab_split]
+                  'lab_split', self.hp.lab_split,
+                  'reweight', self.hp.flag_reweight]
         self.params_str = '_'.join([str(x) for x in params])
         
 

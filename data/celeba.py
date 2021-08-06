@@ -1,4 +1,4 @@
-"""Waterbirds data loader."""
+"""CelebA data loader."""
 
 import os
 
@@ -25,7 +25,7 @@ class CelebA(object):
         print('Using CelebA dataset!')
 
         self.root_dir = ROOT_DIRECTORY
-        self.data_seed = seed
+        self.dataseed = seed
         self.lab_split = lab_split
         self.reweight = reweight
 

@@ -10,6 +10,7 @@ from absl import flags
 from erm import ERM
 from groupdro import GroupDRO
 from unsupdro import UnsupDRO
+from worstoffdro import WorstoffDRO
 
 from util.utils import HParams
 
@@ -33,7 +34,7 @@ flags.DEFINE_bool(name='flag_saveckpt', default=True, help='To save checkpoints 
 
 # Optimization.
 flags.DEFINE_enum(name='method', default='erm',
-                  enum_values=['erm', 'groupdro', 'unsupdro'],
+                  enum_values=['erm', 'groupdro', 'unsupdro', 'worstoffdro'],
                   help='method.')
 flags.DEFINE_integer(name='seed', default=42, help='random seed for optimizer.')
 flags.DEFINE_enum(name='optimizer', default='Adam',
@@ -67,6 +68,8 @@ flags.DEFINE_float(name='groupdro_stepsize', default=0.01,
 flags.DEFINE_bool(name='flag_reweight', default=False, help='To reweight groups for waterbirds dataset')
 flags.DEFINE_float(name='unsupdro_eta', default=0.9,
                    help='soft penalty step size.')
+flags.DEFINE_float(name='worstoffdro_stepsize', default=0.01,
+                   help='soft penalty step size.')
 
 # SSL Parameters
 flags.DEFINE_float(name='lab_split', default=1.0,
@@ -86,6 +89,8 @@ def get_trainer(hparams):
         trainer = GroupDRO(hparams)
     elif hparams.method == 'unsupdro':
         trainer = UnsupDRO(hparams)
+    elif hparams.method == 'worstoffdro':
+        trainer = WorstoffDRO(hparams)
     else:
         raise NotImplementedError
 

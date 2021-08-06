@@ -18,7 +18,7 @@ import pdb
 
 # Dataset.
 flags.DEFINE_enum(name='dataset', default='Adult',
-                  enum_values=['Adult', 'German', 'Waterbirds', 'AdultConfounded'],
+                  enum_values=['Adult', 'German', 'Waterbirds', 'AdultConfounded', 'CelebA'],
                   help='dataset.')
 flags.DEFINE_integer(name='dataseed', default=0,
                      help='random seed for dataset construction.')

@@ -18,6 +18,7 @@ import pdb
 
 from data.tabular import Tabular
 from data.waterbirds import Waterbirds
+from data.celeba import CelebA
 
 from model.fullyconn import FullyConnected
 from torchvision.models import resnet50 as ResNet50
@@ -56,6 +57,8 @@ class BaseTrain(object):
             return Tabular(self.dataset_name, lab_split=self.hp.lab_split)
         elif self.dataset_name in ['Waterbirds']:
             return Waterbirds(lab_split=self.hp.lab_split, reweight=self.hp.flag_reweight)
+        elif self.dataset_name in ['CelebA']:
+            return CelebA(lab_split=self.hp.lab_split, reweight=self.hp.flag_reweight)
         else:
             raise ValueError('Dataset not supported.')
 

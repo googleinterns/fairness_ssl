@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from model.fullyconn import FullyConnected
 
 from util.train import BaseTrain
+from util.solver import Solver
 from util.utils import HParams, DEFAULT_MISSING_CONST as DF_M
 from util.metrics_store import MetricsEval
 
@@ -74,6 +75,9 @@ class WorstoffDRO(BaseTrain):
         loss = F.cross_entropy(y_logit, y, reduction='none')
         control_loss, control_count = self.stats_per_control(loss.cpu(), c.cpu())
         loss_worstoff = self.calculate_worstoff_loss(control_loss, control_count)
+
+        # Get Worst-off group assigments
+        g_hat = Solver()
         
         # Compute gradient.
         self.optimizer.zero_grad()

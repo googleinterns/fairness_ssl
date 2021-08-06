@@ -9,3 +9,4 @@ pytorch_model_summary
 easydict
 scikit-learn
 pandas
+cvxpy

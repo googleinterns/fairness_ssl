@@ -42,7 +42,7 @@ class WorstoffDRO(BaseTrain):
         # Initialize the solver
         self.solver = Solver(n_controls=self.dset.n_controls, \
                              bsize=self.hp.batch_size,\
-                             marginals=self.weights)
+                             marginals=torch.ones(self.dset.n_controls)/self.dset.n_controls)
 
         # params to gpu
         if self.hp.flag_usegpu and torch.cuda.is_available():
@@ -72,9 +72,9 @@ class WorstoffDRO(BaseTrain):
     def compute_loss(self, sample_groups, sample_losses):
         sample_counts = sample_groups.sum(0)
         denom = sample_counts + (sample_counts==0).float()
-        loss = (sample_losses.unsqueeze(0) @ sample_groups) / denom
-        loss = loss.squeeze(0) @ self.weights
-        return loss
+        loss_gp = (sample_losses.unsqueeze(0) @ sample_groups) / denom
+        loss = loss_gp.squeeze(0) @ self.weights
+        return loss, loss_gp
     
     def train_step(self, batch):
         """Trains a model for one step."""
@@ -95,20 +95,17 @@ class WorstoffDRO(BaseTrain):
         loss = F.cross_entropy(y_logit, y, reduction='none')
 
         # Get labelled loss
-
         g_lab = (c.unsqueeze(1) == self.map_vector).float() # 128 X 1, 1 X 4 -> 128 X 4
-        loss_lab = self.compute_loss(g_lab[c!=DF_M], loss[c!=DF_M])
+        loss_lab, loss_lab_gp = self.compute_loss(g_lab[c!=DF_M], loss[c!=DF_M])
         
         # Get unlabelled loss
         Gamma_g = self.solver.eval_nearestnbhs(x)
         g_hat = self.solver.cvxsolve(losses=loss,
                                      weights=self.weights,
                                      Gamma_g=Gamma_g)
-        print(g_hat)
-        print(self.weights)
         if self.hp.flag_usegpu and torch.cuda.is_available():
             g_hat = g_hat.cuda()        
-        loss_unlab = self.compute_loss(g_hat[c==DF_M], loss[c==DF_M])
+        loss_unlab, loss_unlab_gp = self.compute_loss(g_hat[c==DF_M], loss[c==DF_M])
 
         # Total loss
         loss_worstoffdro = loss_lab + self.worstoffdro_lambda * loss_unlab
@@ -119,7 +116,8 @@ class WorstoffDRO(BaseTrain):
         self.optimizer.step()
 
         # Update Weights
-        self.weights = self.weights * torch.exp(self.worstoffdro_stepsize*loss_worstoffdro.data)
+        loss_worstoffdro_gp = (loss_lab_gp + self.worstoffdro_lambda * loss_unlab_gp).view(-1)
+        self.weights = self.weights * torch.exp(self.worstoffdro_stepsize*loss_worstoffdro_gp.data)
         self.weights = self.weights/(self.weights.sum())
         
         # Update metrics.

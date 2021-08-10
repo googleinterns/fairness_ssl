@@ -33,7 +33,7 @@ class WorstoffDRO(BaseTrain):
 
         # Additional parameters
         self.weights = torch.ones(self.dset.n_controls)/self.dset.n_controls
-        self.weights = self.weights.cuda()
+        self.map_vector = torch.arange(self.dset.n_controls).unsqueeze(0).long()
         
         # Additional hyperparameters.
         self.worstoffdro_stepsize = self.hp.worstoffdro_stepsize
@@ -43,6 +43,12 @@ class WorstoffDRO(BaseTrain):
         self.solver = Solver(n_controls=self.dset.n_controls, \
                              bsize=self.hp.batch_size,\
                              marginals=self.weights)
+
+        # params to gpu
+        if self.hp.flag_usegpu and torch.cuda.is_available():
+            self.weights = self.weights.cuda()
+            self.map_vector = self.map_vector.cuda()
+        
         
     def stats_per_control(self, sample_losses, cid):
         control_map = (cid == torch.arange(self.dset.n_controls).unsqueeze(1).long()).float() # 128, 4 X 1 -> 4 X 128
@@ -89,8 +95,8 @@ class WorstoffDRO(BaseTrain):
         loss = F.cross_entropy(y_logit, y, reduction='none')
 
         # Get labelled loss
-        map_vector = torch.arange(self.dset.n_controls).unsqueeze(0).cuda().long()
-        g_lab = (c.unsqueeze(1) == map_vector).float() # 128 X 1, 1 X 4 -> 128 X 4
+
+        g_lab = (c.unsqueeze(1) == self.map_vector).float() # 128 X 1, 1 X 4 -> 128 X 4
         loss_lab = self.compute_loss(g_lab[c!=DF_M], loss[c!=DF_M])
         
         # Get unlabelled loss
@@ -98,6 +104,10 @@ class WorstoffDRO(BaseTrain):
         g_hat = self.solver.cvxsolve(losses=loss,
                                      weights=self.weights,
                                      Gamma_g=Gamma_g)
+        print(g_hat)
+        print(self.weights)
+        if self.hp.flag_usegpu and torch.cuda.is_available():
+            g_hat = g_hat.cuda()        
         loss_unlab = self.compute_loss(g_hat[c==DF_M], loss[c==DF_M])
 
         # Total loss

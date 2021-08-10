@@ -42,7 +42,7 @@ class WorstoffDRO(BaseTrain):
         # Initialize the solver
         self.solver = Solver(n_controls=self.dset.n_controls, \
                              bsize=self.hp.batch_size,\
-                             marginals=self.weights.unsqueeze(-1))
+                             marginals=self.weights)
         
     def stats_per_control(self, sample_losses, cid):
         control_map = (cid == torch.arange(self.dset.n_controls).unsqueeze(1).long()).float() # 128, 4 X 1 -> 4 X 128

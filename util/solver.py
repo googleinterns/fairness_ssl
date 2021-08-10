@@ -6,23 +6,25 @@ import pdb
 
 class Solver(object):
     def __init__(self, n_controls, bsize, marginals):
+
+        marginals = marginals.cpu().numpy()[..., np.newaxis]
         self.X = cp.Variable((bsize, n_controls))
         self.l = cp.Parameter((bsize, 1))
         self.p = cp.Parameter((n_controls, 1), value=marginals)
         self.q = cp.Parameter(n_controls)
         
-        counts = self.X.sum(0)
-        denom = counts + (counts==0).float()
-        obj = (self.l.T @ self.X) @ self.q
+        counts = cp.sum(self.X, axis=0, keepdims=True)
+        #denom = counts + (counts==0)
+        obj = ((self.l.T @ self.X) / self.p.T) @ self.q # can replace counts with self.p.T
         constraints = [self.X >= 0,
-                       cv.sum(self.X, axis=1) == torch.ones(bsize, 1).cuda(),
-                       cv.sum(self.X, axis=0) == marginals.T]
+                       cp.sum(self.X, axis=1, keepdims=True) == np.ones((bsize, 1)),
+                       cp.sum(self.X, axis=0, keepdims=True) == self.p.T]
 
-        self.prob = cp.Problem(obj, constraints)
+        self.prob = cp.Problem(cp.Maximize(obj), constraints)
 
-    def cvxsolve(self, losses, weights, Gamma_g):
-        self.l.value = losses
-        self.q.value = weights
+    def cvxsolve(self, losses, weights, Gamma_g=None):
+        self.l.value = losses.cpu().numpy()[..., np.newaxis]
+        self.q.value = weights.cpu().numpy()
 
         self.prob.solve()
 
@@ -35,4 +37,13 @@ class Solver(object):
         
 
 if __name__ == '__main__':
-    t = Solver()
+    n_controls = 4
+    bsize = 128
+    marginals = torch.tensor([.25, .25, .25, .25])
+    sv = Solver(n_controls, bsize, marginals)
+
+    losses = torch.randn(bsize)
+    weights = torch.tensor([0.2500, 0.2500, 0.2500, 0.2500])
+
+    g_hat = sv.cvxsolve(losses, weights)
+    print('g_hat', g_hat)

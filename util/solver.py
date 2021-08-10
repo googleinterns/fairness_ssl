@@ -1,8 +1,14 @@
 import cvxpy as cp
 import numpy as np
 
+import pdb
+
 class Solver(object):
     def __init__(self):
+        pass
+
+    def cvxsolve(self, losses, weights):
+        
         m = 15
         n = 10
         np.random.seed(1)
@@ -20,11 +26,8 @@ class Solver(object):
                           [A @ x <= b])
         prob.solve()
         
-        # Print result.
-        print("\nThe optimal value is", prob.value)
-        print("A solution x is")
-        print(x.value)
-        print("A dual solution is")
-        print(prob.constraints[0].dual_value)
-
         return x.value
+
+
+if __name__ == '__main__':
+    t = Solver()

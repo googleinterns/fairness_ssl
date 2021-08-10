@@ -64,12 +64,14 @@ flags.DEFINE_bool(name='flag_singlebatch', default=False, help='Enables Debug Mo
 
 # DRO hyper-params
 flags.DEFINE_float(name='groupdro_stepsize', default=0.01,
-                   help='soft penalty step size.')
+                   help='step size.')
 flags.DEFINE_bool(name='flag_reweight', default=False, help='To reweight groups for waterbirds dataset')
 flags.DEFINE_float(name='unsupdro_eta', default=0.9,
-                   help='soft penalty step size.')
+                   help='step size.')
 flags.DEFINE_float(name='worstoffdro_stepsize', default=0.01,
-                   help='soft penalty step size.')
+                   help='step size.')
+flags.DEFINE_float(name='worstoffdro_lambda', default=0.01,
+                   help='regularization for labelled and unlabelled.')
 
 # SSL Parameters
 flags.DEFINE_float(name='lab_split', default=1.0,

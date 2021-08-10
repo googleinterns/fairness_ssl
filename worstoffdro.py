@@ -33,6 +33,7 @@ class WorstoffDRO(BaseTrain):
 
         # Additional parameters
         self.weights = torch.ones(self.dset.n_controls)/self.dset.n_controls
+        self.weights = self.weights.cuda()
         
         # Additional hyperparameters.
         self.worstoffdro_stepsize = self.hp.worstoffdro_stepsize
@@ -57,11 +58,11 @@ class WorstoffDRO(BaseTrain):
 
         return loss_worstoffdro
 
-    def compute_loss(self, sample_groups, sample_losses, weights):
+    def compute_loss(self, sample_groups, sample_losses):
         sample_counts = sample_groups.sum(0)
         denom = sample_counts + (sample_counts==0).float()
         loss = (sample_losses.unsqueeze(0) @ sample_groups) / denom
-        loss = loss @ weights
+        loss = loss.squeeze(0) @ self.weights
         return loss
     
     def train_step(self, batch):
@@ -82,21 +83,20 @@ class WorstoffDRO(BaseTrain):
 
         loss = F.cross_entropy(y_logit, y, reduction='none')
 
-        pdb.set_trace()
         # Get labelled loss
         map_vector = torch.arange(self.dset.n_controls).unsqueeze(0).cuda().long()
         g_lab = (c.unsqueeze(1) == map_vector).float() # 128 X 1, 1 X 4 -> 128 X 4
-        loss_lab = self.compute_loss(g_lab[c!=DF_M], loss[c!=DF_M], self.weights)
+        loss_lab = self.compute_loss(g_lab[c!=DF_M], loss[c!=DF_M])
         
         # Get unlabelled loss
         Gamma_g = Solver().eval_nearestnbhs(x)
         g_hat = Solver().cvxsolve(losses=loss[c==DF_M],
                                   weights=self.weights,
                                   Gamma_g=Gamma_g)
-        loss_unlab = self.compute_loss(g_hat, loss[c==DF_M], self.weights)
+        loss_unlab = self.compute_loss(g_hat, loss[c==DF_M])
 
         # Total loss
-        loss_worstoffdro = loss_labelled + self.worstoffdro_lambda * loss_unlabelled
+        loss_worstoffdro = loss_lab + self.worstoffdro_lambda * loss_unlab
         
         # Update Neural network parameters
         self.optimizer.zero_grad()

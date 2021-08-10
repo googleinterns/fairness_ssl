@@ -1,14 +1,18 @@
 import cvxpy as cp
 import numpy as np
+import torch
 
 import pdb
 
 class Solver(object):
-    def __init__(self):
-        pass
+    def eval_nearestnbhs(self, data):
+        # TODO: nearest neighbours here
+        return None
 
-    def cvxsolve(self, losses, weights):
+    def cvxsolve(self, losses, weights, Gamma_g):
+        return torch.randn(losses.shape[0], 4).cuda()
         
+        '''
         m = 15
         n = 10
         np.random.seed(1)
@@ -27,7 +31,7 @@ class Solver(object):
         prob.solve()
         
         return x.value
-
+        '''
 
 if __name__ == '__main__':
     t = Solver()

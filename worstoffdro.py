@@ -38,6 +38,11 @@ class WorstoffDRO(BaseTrain):
         # Additional hyperparameters.
         self.worstoffdro_stepsize = self.hp.worstoffdro_stepsize
         self.worstoffdro_lambda = self.hp.worstoffdro_lambda
+
+        # Initialize the solver
+        self.solver = Solver(n_controls=self.dset.n_controls, \
+                             bsize=self.hp.batch_size,\
+                             marginals=self.weights.unsqueeze(-1))
         
     def stats_per_control(self, sample_losses, cid):
         control_map = (cid == torch.arange(self.dset.n_controls).unsqueeze(1).long()).float() # 128, 4 X 1 -> 4 X 128
@@ -89,11 +94,11 @@ class WorstoffDRO(BaseTrain):
         loss_lab = self.compute_loss(g_lab[c!=DF_M], loss[c!=DF_M])
         
         # Get unlabelled loss
-        Gamma_g = Solver().eval_nearestnbhs(x)
-        g_hat = Solver().cvxsolve(losses=loss[c==DF_M],
-                                  weights=self.weights,
-                                  Gamma_g=Gamma_g)
-        loss_unlab = self.compute_loss(g_hat, loss[c==DF_M])
+        Gamma_g = self.solver.eval_nearestnbhs(x)
+        g_hat = self.solver.cvxsolve(losses=loss,
+                                     weights=self.weights,
+                                     Gamma_g=Gamma_g)
+        loss_unlab = self.compute_loss(g_hat[c==DF_M], loss[c==DF_M])
 
         # Total loss
         loss_worstoffdro = loss_lab + self.worstoffdro_lambda * loss_unlab

@@ -49,26 +49,6 @@ class WorstoffDRO(BaseTrain):
             self.weights = self.weights.cuda()
             self.map_vector = self.map_vector.cuda()
         
-        
-    def stats_per_control(self, sample_losses, cid):
-        control_map = (cid == torch.arange(self.dset.n_controls).unsqueeze(1).long()).float() # 128, 4 X 1 -> 4 X 128
-        control_count = control_map.sum(1)
-        divide = control_count + (control_count==0).float() # handling None
-        control_loss = (control_map @ sample_losses.view(-1))/divide
-        return control_loss, control_count
-
-    def calculate_worstoffdro_loss(self, control_loss):
-        self.weights = self.weights * torch.exp(self.worstoffdro_stepsize*control_loss.data)
-        self.weights = self.weights/(self.weights.sum())
-
-        loss_worstoffdro = control_loss @ self.weights
-
-        # Track WorstoffDRO weights
-        for i in range(len(self.weights)):
-            self.writer.add_scalar(f'train/weights.{i}', self.weights[i], self.epoch)
-
-        return loss_worstoffdro
-
     def compute_loss(self, sample_groups, sample_losses):
         sample_counts = sample_groups.sum(0)
         denom = sample_counts + (sample_counts==0).float()

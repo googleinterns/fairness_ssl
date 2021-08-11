@@ -9,7 +9,7 @@ python train_and_eval_loop.py \
        --num_epoch 300 \
        --weight_decay 1.0  \
        --lab_split 0.3 \
-       --gpu_ids '1' \
-       --flag_debug \
-       --flag_singlebatch
+       --worstoffdro_lambda 0.01 \
+       --worstoffdro_latestart 100 \
+       --gpu_ids '6'
        

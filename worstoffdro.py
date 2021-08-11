@@ -25,7 +25,9 @@ class WorstoffDRO(BaseTrain):
 
     def get_ckpt_path(self):
         super(WorstoffDRO, self).get_ckpt_path()
-        new_params = ['_worstoffdro_stepsize', self.hp.worstoffdro_stepsize]
+        new_params = ['_worstoffdro_stepsize', self.hp.worstoffdro_stepsize,
+                      '_worstoffdro_lambda', self.hp.worstoffdro_lambda,
+                      '_worstoffdro_latestart', self.hp.worstoffdro_latestart]
         self.params_str += '_'.join([str(x) for x in new_params])
     
     def get_config(self):
@@ -38,6 +40,7 @@ class WorstoffDRO(BaseTrain):
         # Additional hyperparameters.
         self.worstoffdro_stepsize = self.hp.worstoffdro_stepsize
         self.worstoffdro_lambda = self.hp.worstoffdro_lambda
+        self.worstoffdro_latestart = self.hp.worstoffdro_latestart
 
         # Initialize the solver
         self.solver = Solver(n_controls=self.dset.n_controls, \
@@ -84,19 +87,26 @@ class WorstoffDRO(BaseTrain):
                                      weights=self.weights,
                                      Gamma_g=Gamma_g)
         if self.hp.flag_usegpu and torch.cuda.is_available():
-            g_hat = g_hat.cuda()        
+            g_hat = g_hat.cuda()
         loss_unlab, loss_unlab_gp = self.compute_loss(g_hat[c==DF_M], loss[c==DF_M])
-
-        # Total loss
-        loss_worstoffdro = loss_lab + self.worstoffdro_lambda * loss_unlab
         
+        # Total loss
+        if self.epoch >= self.worstoffdro_latestart:
+            loss_worstoffdro = loss_lab + self.worstoffdro_lambda * loss_unlab
+        else:
+            loss_worstoffdro = loss_lab
+            
         # Update Neural network parameters
         self.optimizer.zero_grad()
         loss_worstoffdro.backward()
         self.optimizer.step()
 
         # Update Weights
-        loss_worstoffdro_gp = (loss_lab_gp + self.worstoffdro_lambda * loss_unlab_gp).view(-1)
+        if self.epoch >= self.worstoffdro_latestart:
+            loss_worstoffdro_gp = (loss_lab_gp + self.worstoffdro_lambda * loss_unlab_gp).view(-1)
+        else:
+            loss_worstoffdro_gp = loss_lab_gp.view(-1)
+            
         self.weights = self.weights * torch.exp(self.worstoffdro_stepsize*loss_worstoffdro_gp.data)
         self.weights = self.weights/(self.weights.sum())
         

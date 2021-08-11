@@ -72,6 +72,8 @@ flags.DEFINE_float(name='worstoffdro_stepsize', default=0.01,
                    help='step size.')
 flags.DEFINE_float(name='worstoffdro_lambda', default=0.01,
                    help='regularization for labelled and unlabelled.')
+flags.DEFINE_integer(name='worstoffdro_latestart', default=0,
+                   help='epoch at which the unlab loss will be added.')
 
 # SSL Parameters
 flags.DEFINE_float(name='lab_split', default=1.0,

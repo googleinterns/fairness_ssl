@@ -109,6 +109,10 @@ class WorstoffDRO(BaseTrain):
             
         self.weights = self.weights * torch.exp(self.worstoffdro_stepsize*loss_worstoffdro_gp.data)
         self.weights = self.weights/(self.weights.sum())
+
+        # Track GroupDRO weights
+        for i in range(len(self.weights)):
+            self.writer.add_scalar(f'train/weights.{i}', self.weights[i], self.epoch)
         
         # Update metrics.
         # Maintains running average over all the metrics

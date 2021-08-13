@@ -17,7 +17,11 @@ import numpy as np
 import pdb
 
 class WorstoffDRO(BaseTrain):
-    """Partially labelled DRO measure.
+    """
+    A method that uses worstoff group assignments for optimizing the Rawlsian Measure.
+    Upon receiving the worstoff group assignments, the group weights are updated through 
+    exponential gradient ascent and the neural network parameters are updated through
+    gradient descent. 
     """
 
     def __init__(self, hparams):

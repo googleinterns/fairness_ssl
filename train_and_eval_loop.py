@@ -63,19 +63,16 @@ flags.DEFINE_bool(name='flag_debug', default=False, help='Enables Debug Mode')
 flags.DEFINE_bool(name='flag_singlebatch', default=False, help='Enables Debug Mode')
 
 # DRO hyper-params
-flags.DEFINE_float(name='groupdro_stepsize', default=0.01,
-                   help='step size.')
+flags.DEFINE_float(name='groupdro_stepsize', default=0.01, help='step size.')
 flags.DEFINE_bool(name='flag_reweight', default=False, help='To reweight groups for waterbirds dataset')
-flags.DEFINE_float(name='unsupdro_eta', default=0.9,
-                   help='step size.')
-flags.DEFINE_float(name='worstoffdro_stepsize', default=0.01,
-                   help='step size.')
+flags.DEFINE_float(name='unsupdro_eta', default=0.9, help='step size.')
+flags.DEFINE_float(name='worstoffdro_stepsize', default=0.01, help='step size for parameter update')
 flags.DEFINE_float(name='worstoffdro_lambda', default=0.01,
                    help='regularization for labelled and unlabelled.')
 flags.DEFINE_integer(name='worstoffdro_latestart', default=0,
-                   help='epoch at which the unlab loss will be added.')
+                     help='epoch at which the unlab loss will be added.')
 flags.DEFINE_list(name='worstoffdro_marginals', default=['.25','.25','.25','.25'],
-                   help='Marginal probabilities for each group.')
+                  help='Marginal probabilities for each group.')
 
 # SSL Parameters
 flags.DEFINE_float(name='lab_split', default=1.0,

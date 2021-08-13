@@ -9,7 +9,9 @@ python train_and_eval_loop.py \
        --num_epoch 300 \
        --weight_decay 1.0  \
        --lab_split 0.3 \
-       --worstoffdro_lambda 0.01 \
-       --worstoffdro_latestart 100 \
-       --gpu_ids '6'
+       --worstoffdro_lambda 1.0 \
+       --worstoffdro_latestart 0 \
+       --worstoffdro_marginals=.25,.25,.25,.25 \
+       --gpu_ids '0' \
+       --flag_debug
        

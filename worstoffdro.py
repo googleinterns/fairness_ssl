@@ -27,9 +27,11 @@ class WorstoffDRO(BaseTrain):
         super(WorstoffDRO, self).get_ckpt_path()
         new_params = ['_worstoffdro_stepsize', self.hp.worstoffdro_stepsize,
                       '_worstoffdro_lambda', self.hp.worstoffdro_lambda,
-                      '_worstoffdro_latestart', self.hp.worstoffdro_latestart]
+                      '_worstoffdro_latestart', self.hp.worstoffdro_latestart,
+                      '_worstoffdro_marginals', '-'.join(self.hp.worstoffdro_marginals)]
         self.params_str += '_'.join([str(x) for x in new_params])
-    
+        print(self.params_str)
+        
     def get_config(self):
         super(WorstoffDRO, self).get_config()
 
@@ -41,11 +43,15 @@ class WorstoffDRO(BaseTrain):
         self.worstoffdro_stepsize = self.hp.worstoffdro_stepsize
         self.worstoffdro_lambda = self.hp.worstoffdro_lambda
         self.worstoffdro_latestart = self.hp.worstoffdro_latestart
-
+        self.worstoffdro_marginals = [float(x) for x in self.hp.worstoffdro_marginals]
+        assert (len(self.worstoffdro_marginals) == self.dset.n_controls), "marginals count incorrect"
+        assert (1.-1e-6 <= sum(self.worstoffdro_marginals) <= 1+1e-6), "marginals sum not one"
+        print('marginals in training', self.worstoffdro_marginals)
+        
         # Initialize the solver
         self.solver = Solver(n_controls=self.dset.n_controls, \
                              bsize=self.hp.batch_size,\
-                             marginals=torch.ones(self.dset.n_controls)/self.dset.n_controls)
+                             marginals=self.worstoffdro_marginals)
 
         # params to gpu
         if self.hp.flag_usegpu and torch.cuda.is_available():
@@ -86,6 +92,14 @@ class WorstoffDRO(BaseTrain):
         g_hat = self.solver.cvxsolve(losses=loss,
                                      weights=self.weights,
                                      Gamma_g=Gamma_g)
+
+        '''
+        # for checks
+        print(torch.argsort(self.weights, descending=True))
+        print(torch.argmax(g_hat[torch.topk(loss, 128)[1], :], 1))
+        print(' ')
+        '''
+        
         if self.hp.flag_usegpu and torch.cuda.is_available():
             g_hat = g_hat.cuda()
         loss_unlab, loss_unlab_gp = self.compute_loss(g_hat[c==DF_M], loss[c==DF_M])

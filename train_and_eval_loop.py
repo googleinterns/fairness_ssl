@@ -74,6 +74,8 @@ flags.DEFINE_float(name='worstoffdro_lambda', default=0.01,
                    help='regularization for labelled and unlabelled.')
 flags.DEFINE_integer(name='worstoffdro_latestart', default=0,
                    help='epoch at which the unlab loss will be added.')
+flags.DEFINE_list(name='worstoffdro_marginals', default=['.25','.25','.25','.25'],
+                   help='Marginal probabilities for each group.')
 
 # SSL Parameters
 flags.DEFINE_float(name='lab_split', default=1.0,

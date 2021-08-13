@@ -9,7 +9,7 @@ TOL = 1e-6
 class Solver(object):
     def __init__(self, n_controls, bsize, marginals):
 
-        marginals = marginals.cpu().numpy()[..., np.newaxis]
+        marginals = np.array(marginals)[..., np.newaxis]
         self.X = cp.Variable((bsize, n_controls))
         self.l = cp.Parameter((bsize, 1))
         self.p = cp.Parameter((n_controls, 1), value=marginals)

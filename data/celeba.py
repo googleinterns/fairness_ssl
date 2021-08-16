@@ -49,6 +49,8 @@ class CelebA(object):
         self.n_controls = self.n_targets * self.n_envs # Each target x env counts as one group
         self.control = (self.target*(self.n_controls/2) + self.environment).astype('int')
         assert self.n_controls == len(np.unique(self.control)), "Error in control list"
+
+        # Marginal count from data=0.44,0.41,0.14.0.01
         
         # Extract filenames and splits
         self.filename = self.metadata['image_id'].values

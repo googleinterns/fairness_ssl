@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from model.fullyconn import FullyConnected
 
 from util.train import BaseTrain
-from util.utils import HParams
+from util.utils import HParams, DEFAULT_MISSING_CONST as DF_M
 from util.metrics_store import MetricsEval
 
 from pytorch_model_summary import summary

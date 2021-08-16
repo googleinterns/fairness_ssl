@@ -68,7 +68,7 @@ class UnsupDRO(BaseTrain):
         # TODO: eliminate the need for for loops
         prefix = 'train'
         for cid in range(-1, self.dset.n_controls):
-            select = c >= 0 if cid == -1 else c == cid 
+            select = c != DF_M if cid == -1 else c == cid 
             size = sum(select)
             
             self.metrics_dict[f'{prefix}.loss.{cid}'].update(

@@ -10,6 +10,7 @@ from absl import flags
 from erm import ERM
 from groupdro import GroupDRO
 from unsupdro import UnsupDRO
+from worstoffdro import WorstoffDRO
 
 from util.utils import HParams
 
@@ -18,7 +19,7 @@ import pdb
 
 # Dataset.
 flags.DEFINE_enum(name='dataset', default='Adult',
-                  enum_values=['Adult', 'German', 'Waterbirds', 'AdultConfounded'],
+                  enum_values=['Adult', 'German', 'Waterbirds', 'AdultConfounded', 'CelebA'],
                   help='dataset.')
 flags.DEFINE_integer(name='dataseed', default=0,
                      help='random seed for dataset construction.')
@@ -33,7 +34,7 @@ flags.DEFINE_bool(name='flag_saveckpt', default=True, help='To save checkpoints 
 
 # Optimization.
 flags.DEFINE_enum(name='method', default='erm',
-                  enum_values=['erm', 'groupdro', 'unsupdro'],
+                  enum_values=['erm', 'groupdro', 'unsupdro', 'worstoffdro'],
                   help='method.')
 flags.DEFINE_integer(name='seed', default=42, help='random seed for optimizer.')
 flags.DEFINE_enum(name='optimizer', default='Adam',
@@ -62,11 +63,16 @@ flags.DEFINE_bool(name='flag_debug', default=False, help='Enables Debug Mode')
 flags.DEFINE_bool(name='flag_singlebatch', default=False, help='Enables Debug Mode')
 
 # DRO hyper-params
-flags.DEFINE_float(name='groupdro_stepsize', default=0.01,
-                   help='soft penalty step size.')
+flags.DEFINE_float(name='groupdro_stepsize', default=0.01, help='step size.')
 flags.DEFINE_bool(name='flag_reweight', default=False, help='To reweight groups for waterbirds dataset')
-flags.DEFINE_float(name='unsupdro_eta', default=0.9,
-                   help='soft penalty step size.')
+flags.DEFINE_float(name='unsupdro_eta', default=0.9, help='step size.')
+flags.DEFINE_float(name='worstoffdro_stepsize', default=0.01, help='step size for parameter update')
+flags.DEFINE_float(name='worstoffdro_lambda', default=0.01,
+                   help='regularization for labelled and unlabelled.')
+flags.DEFINE_integer(name='worstoffdro_latestart', default=0,
+                     help='epoch at which the unlab loss will be added.')
+flags.DEFINE_list(name='worstoffdro_marginals', default=['.25','.25','.25','.25'],
+                  help='Marginal probabilities for each group.')
 
 # SSL Parameters
 flags.DEFINE_float(name='lab_split', default=1.0,
@@ -86,6 +92,8 @@ def get_trainer(hparams):
         trainer = GroupDRO(hparams)
     elif hparams.method == 'unsupdro':
         trainer = UnsupDRO(hparams)
+    elif hparams.method == 'worstoffdro':
+        trainer = WorstoffDRO(hparams)
     else:
         raise NotImplementedError
 

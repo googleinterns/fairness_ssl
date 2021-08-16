@@ -97,12 +97,13 @@ class WorstoffDRO(BaseTrain):
                                      weights=self.weights,
                                      Gamma_g=Gamma_g)
 
-        '''
+
         # for checks
         print(torch.argsort(self.weights, descending=True))
         print(torch.argmax(g_hat[torch.topk(loss, 128)[1], :], 1))
+        print(torch.topk(loss, 128)[0])
         print(' ')
-        '''
+
         
         if self.hp.flag_usegpu and torch.cuda.is_available():
             g_hat = g_hat.cuda()

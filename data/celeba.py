@@ -101,7 +101,8 @@ class CelebA(object):
         c_train = self.control[self.split_idx == 0] # 0 for train
         c_valid = self.control[self.split_idx == 1] # 1 for valid
         c_test = self.control[self.split_idx == 2] # 2 for test    
-    
+        self.c_train_gt = c_train.copy()
+        
         # SSL Setting
         if self.lab_split < 1.0:
             #TODO: check uniform sampling
@@ -162,7 +163,7 @@ class CelebA(object):
             self.c_train = torch.LongTensor(self.c_train)
             c_counts = (torch.arange(self.n_controls).unsqueeze(1)==self.c_train).sum(1).float()
             c_invprobs = len(self.train_set) / c_counts
-            invprobs = c_invprobs[self.c_train]
+            invprobs = c_invprobs[self.c_train_gt] # from uniform sampling
 
             sampler_train = WeightedRandomSampler(invprobs, len(self.train_set), replacement=True)
             shuffle_train = False

@@ -1,0 +1,12 @@
+python train_and_eval_loop.py \
+       --dataset 'CMNIST' \
+       --model_type 'mlp' \
+       --latent_dim 390 \
+       --method 'groupdro' \
+       --optimizer 'Adam' \
+       --learning_rate 0.0005 \
+       --noflag_saveckpt \
+       --batch_size 128 \
+       --num_epoch 501\
+       --weight_decay 0.001  \
+       --gpu_ids '1'

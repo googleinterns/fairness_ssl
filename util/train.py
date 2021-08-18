@@ -77,6 +77,10 @@ class BaseTrain(object):
             model = FullyConnected(input_dim=input_dim,\
                                    latent_dim=self.hp.latent_dim,
                                    n_targets=n_targets)
+        elif self.hp.model_type == 'mlp':
+            model = MLP(input_dim=input_dim,\
+                        latent_dim=self.hp.latent_dim,
+                        n_targets=n_targets)
         elif self.hp.model_type == 'resnet50':
             model = ResNet50(pretrained=True) # default model is pretrained
             last_dim = model.fc.in_features

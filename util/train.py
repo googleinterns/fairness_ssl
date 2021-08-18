@@ -19,6 +19,7 @@ import pdb
 from data.tabular import Tabular
 from data.waterbirds import Waterbirds
 from data.celeba import CelebA
+from data.cmnist import CMNIST
 
 from model.fullyconn import FullyConnected
 from model.mlp import MLP
@@ -60,6 +61,8 @@ class BaseTrain(object):
             return Waterbirds(lab_split=self.hp.lab_split, reweight=self.hp.flag_reweight)
         elif self.dataset_name in ['CelebA']:
             return CelebA(lab_split=self.hp.lab_split, reweight=self.hp.flag_reweight)
+        elif self.dataset_name in ['CMNIST']:
+            return CMNIST(lab_split=self.hp.lab_split, reweight=self.hp.flag_reweight)
         else:
             raise ValueError('Dataset not supported.')
 

@@ -39,5 +39,8 @@ class AverageMeter(object):
     def get_current_val(self):
         return self.val
 
+def flip_bit(a, b):
+    return (a-b).abs()
+
 
     

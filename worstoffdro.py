@@ -128,8 +128,8 @@ class WorstoffDRO(BaseTrain):
         for i in range(len(self.weights)):
             self.writer.add_scalar(f'train/weights.{i}', self.weights[i], self.epoch)
             self.writer.add_scalar(f'train/weights_adjusted.{i}', self.weights[i]/self.worstoffdro_marginals[i], self.epoch)
-            self.writer.add_scalar(f'train/g_hat_group_loss.{i}', loss_unlab_gp[0, i], self.epoch)
-            #self.writer.add_scalar(f'train/g_star_group_loss.{i}', loss[c==i].mean(), self.epoch)            
+            self.writer.add_scalar(f'train/g_hat_batch_loss.{i}', loss_unlab_gp[0, i], self.epoch)
+            if sum(c==i) > 0: self.writer.add_scalar(f'train/g_star_batch_loss.{i}', loss[c==i].mean(), self.epoch) 
         
         # Update metrics.
         # Maintains running average over all the metrics

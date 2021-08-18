@@ -21,6 +21,7 @@ from data.waterbirds import Waterbirds
 from data.celeba import CelebA
 
 from model.fullyconn import FullyConnected
+from model.mlp import MLP
 from torchvision.models import resnet50 as ResNet50
 
 from util.utils import HParams, AverageMeter

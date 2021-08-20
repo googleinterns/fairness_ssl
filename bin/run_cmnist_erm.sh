@@ -5,6 +5,7 @@ python train_and_eval_loop.py \
        --method 'erm' \
        --optimizer 'Adam' \
        --learning_rate 0.0005 \
+       --batch_size 39640 \
        --noflag_saveckpt \
        --num_epoch 501 \
        --weight_decay 0.001 \

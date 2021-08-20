@@ -5,9 +5,9 @@ python train_and_eval_loop.py \
        --method 'groupdro' \
        --optimizer 'Adam' \
        --learning_rate 0.0005 \
+       --batch_size 39640 \
        --noflag_saveckpt \
-       --batch_size 128 \
        --num_epoch 501 \
        --weight_decay 0.001  \
-       --lab_split 0.3 \
-       --gpu_ids '2'
+       --lab_split 0.1 \
+       --gpu_ids '5'

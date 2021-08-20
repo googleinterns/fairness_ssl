@@ -160,9 +160,10 @@ class CMNIST(object):
         else:
             sampler_train = None
             shuffle_train = True
-    
+
+        # Full-batch training, adjust the hyper-param in the bin file accordingly
         train_loader = torch.utils.data.DataLoader(self.train_set,
-                                                   batch_size=len(self.train_set),
+                                                   batch_size=batch_size,
                                                    num_workers=num_workers,
                                                    shuffle=shuffle_train,
                                                    sampler=sampler_train, drop_last=False)

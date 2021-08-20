@@ -37,7 +37,11 @@ class CMNIST(object):
 
         # Load data
         mnist = datasets.MNIST(self.data_dir, train=True, download=True)
-        self.samples = mnist.data
+        images = mnist.data
+        images = images.float() / 255.
+        images = images.reshape((-1, 28, 28))[:, ::2, ::2] # reduce image dimensions to -1x14x14
+        images = torch.stack([images, images], dim=1) # add channels for adding color
+        self.sample = images
 
         # Target values
         self.target = mnist.targets
@@ -45,17 +49,17 @@ class CMNIST(object):
         self.n_targets = len(np.unique(self.target))
         
         # Control values
-        probs = [0.5, 0.4, 0.1] # Marginal probabilities
-        np.random.seed(self.dataseed)
-        self.control = np.random.choice(len(probs), size=len(self.samples), p=probs)
+        probs = [0.53, 0.4, 0.07] # Marginal probabilities
+        np.random.seed(self.dataseed+1)
+        self.control = np.random.choice(len(probs), size=len(self.sample), p=probs)
         self.n_controls = len(np.unique(self.control))
         assert self.n_controls == len(probs) == len(self.color_noise), "Error in control list"
         
         # Split idx
         probs = [0.66, 0.17, 0.17] # train, val and test splits
-        np.random.seed(self.dataseed)
-        self.split_idx = np.random.choice(len(probs), size=len(self.samples), p=probs)
-        
+        np.random.seed(self.dataseed+2)
+        self.split_idx = np.random.choice(len(probs), size=len(self.sample), p=probs)
+
         # Prepare each control environment by adding noise
         self.add_color_label_noise()
         
@@ -65,29 +69,23 @@ class CMNIST(object):
             self.c_train, c_valid, c_test = self.generate_splits()
 
         # Create Torch Custom Datasets
-        self.train_set = data_util.ImageFromDisk(filename=sm_train, \
+        self.train_set = data_util.ImageFromMemory(sample=sm_train, \
                                                    target=y_train, \
-                                                   control=self.c_train,
-                                                   data_dir=self.data_dir,
-                                                   transform=train_transform)
+                                                   control=self.c_train)
         
-        self.val_set = data_util.ImageFromDisk(filename=sm_valid, \
+        self.val_set = data_util.ImageFromMemory(sample=sm_valid, \
                                                  target=y_valid, \
-                                                 control=c_valid,
-                                                 data_dir=self.data_dir,
-                                                 transform=eval_transform)
+                                                 control=c_valid)
         
-        self.test_set = data_util.ImageFromDisk(filename=sm_test, \
+        self.test_set = data_util.ImageFromMemory(sample=sm_test, \
                                                   target=y_test, \
-                                                  control=c_test,
-                                                  data_dir=self.data_dir,
-                                                  transform=eval_transform)
+                                                  control=c_test)
         return
 
 
     def add_color_label_noise(self):
         for cid in range(self.n_controls):
-            images = self.samples[self.control==cid]
+            images = self.sample[self.control==cid]
             labels = self.target[self.control==cid]
 
             label_noise = (torch.rand(len(labels)) < self.label_noise).float()
@@ -97,21 +95,18 @@ class CMNIST(object):
             colors = flip_bit(labels, color_noise)
 
             # Add color to the samples
-            images = torch.stack([images, images], dim=1)
             images[torch.tensor(range(len(images))), (1-colors).long(), :, :] *= 0
-            images = (images.float() / 255.)
 
-            self.samples[self.control==cid] = images
+            self.sample[self.control==cid] = images
             self.target[self.control==cid] = labels
-            
 
     def generate_splits(self):
-        """Create the splits in filename, targets and controls
+        """Create the splits in sample, targets and controls
         """
 
-        sm_train = self.samples[self.split_idx == 0] # 0 for train
-        sm_valid = self.samples[self.split_idx == 1] # 1 for valid
-        sm_test = self.samples[self.split_idx == 2] # 2 for test
+        sm_train = self.sample[self.split_idx == 0] # 0 for train
+        sm_valid = self.sample[self.split_idx == 1] # 1 for valid
+        sm_test = self.sample[self.split_idx == 2] # 2 for test
 
         y_train = self.target[self.split_idx == 0] # 0 for train
         y_valid = self.target[self.split_idx == 1] # 1 for valid
@@ -167,16 +162,16 @@ class CMNIST(object):
             shuffle_train = True
     
         train_loader = torch.utils.data.DataLoader(self.train_set,
-                                                   batch_size=batch_size,
+                                                   batch_size=len(self.train_set),
                                                    num_workers=num_workers,
                                                    shuffle=shuffle_train,
-                                                   sampler=sampler_train, drop_last=True)
+                                                   sampler=sampler_train, drop_last=False)
         val_loader = torch.utils.data.DataLoader(self.val_set,
-                                                 batch_size=batch_size,
+                                                 batch_size=len(self.val_set),
                                                  num_workers=num_workers,
                                                  shuffle=False, drop_last=False)
         test_loader = torch.utils.data.DataLoader(self.test_set,
-                                                  batch_size=batch_size,
+                                                  batch_size=len(self.test_set),
                                                   num_workers=num_workers,
                                                   shuffle=False, drop_last=False)
         

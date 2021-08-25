@@ -55,7 +55,7 @@ class BaseTrain(object):
     def get_dataset(self):
         """Gets dataset."""
 
-        if self.dataset_name in ['German', 'Adult', 'AdultConfounded']:
+        if self.dataset_name in ['German', 'Adult', 'AdultConfounded', 'Adult2']:
             return Tabular(self.dataset_name, lab_split=self.hp.lab_split)
         elif self.dataset_name in ['Waterbirds']:
             return Waterbirds(lab_split=self.hp.lab_split, reweight=self.hp.flag_reweight)

@@ -68,7 +68,7 @@ class Tabular(object):
       train_data, train_target, train_control,\
         valid_data, valid_target, valid_control,\
         test_data, test_target, test_control = \
-          data_util.process_adultconf_data()
+          data_util.process_adult_sex_race_data()
 
       # 'race' \times 'sex' is control group
       # Each of 'race' and 'sex' is binary
@@ -103,6 +103,47 @@ class Tabular(object):
         for prefix in ['train', 'valid', 'test']:
           print(f'{prefix}-control{cid}',
                 eval(f'sum(({prefix}_target.squeeze(-1) == 1) & ({prefix}_control == {cid})) / sum({prefix}_control == {cid})' ))
+          
+    elif dataset_name == 'Adult2':
+      train_data, train_target, train_control,\
+        valid_data, valid_target, valid_control,\
+        test_data, test_target, test_control = \
+          data_util.process_adult_sex_race_data()
+
+      # 'race' \times 'sex' is control group
+      # Each of 'race' and 'sex' is binary
+      # 3:Black-Female, 2:Black-Male, 1:NonBlack-Female, 0:NonBlack-Male
+      n_controls = 4
+      train_control = train_control[:, 0]*2  + train_control[:, 1]
+      valid_control = valid_control[:, 0]*2  + valid_control[:, 1]
+      test_control = test_control[:, 0]*2 + test_control[:, 1]
+
+      # Stats prior to sampling
+      print('Pr(y=1/g) before resampling')
+      for cid in range(n_controls):
+        for prefix in ['train', 'valid', 'test']:
+          print(f'{prefix}-control{cid}',
+                eval(f'sum(({prefix}_target.squeeze(-1) == 1) & ({prefix}_control == {cid})) / sum({prefix}_control == {cid})' ))
+          
+      train_data, train_target, train_control = data_util.resample(train_data, train_target, train_control,
+                                                         n_controls=4, seed=self.dataseed,
+                                                         probs=[0.94, 0.94, 0.06, 0.06])
+
+      valid_data, valid_target, valid_control = data_util.resample(valid_data, valid_target, valid_control,
+                                                         n_controls=4, seed=self.dataseed,
+                                                         probs=[0.94, 0.94, 0.06, 0.06])
+      
+      test_data, test_target, test_control = data_util.resample(test_data, test_target, test_control,
+                                                         n_controls=4, seed=self.dataseed,
+                                                         probs=[0.94, 0.94, 0.06, 0.06])
+
+      # Stats after sampling
+      print('Pr(y=1/g) after resampling')
+      for cid in range(n_controls):
+        for prefix in ['train', 'valid', 'test']:
+          print(f'{prefix}-control{cid}',
+                eval(f'sum(({prefix}_target.squeeze(-1) == 1) & ({prefix}_control == {cid})) / sum({prefix}_control == {cid})' ))
+      
     else:
       raise NotImplementedError
 
@@ -117,7 +158,12 @@ class Tabular(object):
     self.x_test = test_data
     self.y_test = test_target
     self.c_test = test_control
-    
+
+    #print(sum(self.c_train==0)/len(self.c_train))
+    #print(sum(self.c_train==1)/len(self.c_train))
+    #print(sum(self.c_train==2)/len(self.c_train))
+    #print(sum(self.c_train==3)/len(self.c_train))
+            
     # SSL Setting
     if self.lab_split < 1.0:
       np.random.seed(self.dataseed)
@@ -148,13 +194,13 @@ class Tabular(object):
     # Generate DataLoaders
     train_loader = torch.utils.data.DataLoader(self.train_set,
                                                batch_size=batch_size,
-                                               shuffle= True)
+                                               shuffle= True, drop_last=True)
     valid_loader = torch.utils.data.DataLoader(self.val_set,
                                                batch_size=batch_size,
-                                               shuffle= False)
+                                               shuffle= False, drop_last=False)
     test_loader = torch.utils.data.DataLoader(self.test_set,
                                                batch_size=batch_size,
-                                               shuffle= False)
+                                               shuffle= False, drop_last=False)
 
     # Semi-supervised Setting
     # TODO(lokhandevishnu:)

@@ -152,7 +152,7 @@ def process_adult_data():
     test_data.values, test_target.values, test_control.values
 
 
-def process_adultconf_data():
+def process_adult_sex_race_data():
   """Process the entries of Adult dataset. Creates the training, 
   validation and test splits. 
 

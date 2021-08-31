@@ -152,7 +152,7 @@ def process_adult_data():
     test_data.values, test_target.values, test_control.values
 
 
-def process_adultconf_data():
+def process_adult_sex_race_data():
   """Process the entries of Adult dataset. Creates the training, 
   validation and test splits. 
 
@@ -380,6 +380,29 @@ class ImageFromDisk(torch.utils.data.Dataset):
     x = img
 
     return x, torch.tensor(y).long(), torch.tensor(c).long()
+
+class ImageFromMemory(torch.utils.data.Dataset):
+  """Creates a custom dataset for imaging data
+  """
+  
+  def __init__(self, sample, target, control, transform=None):
+    self.sample = sample
+    self.target = target
+    self.control = control
+    self.transform = transform
+    
+  def __len__(self):
+    return self.sample.shape[0]
+
+  def __getitem__(self, idx):
+    x = self.sample[idx]
+    y = self.target[idx]
+    c = self.control[idx]
+    
+    if self.transform is not None:
+      x = self.transform(x)
+
+    return x, y.long(), torch.tensor(c).long()
   
 def resample(data, target, control, n_controls = 4, seed=42, probs = [0.94, 0.06, 0.94, 0.06]):
   for cid in range(n_controls):

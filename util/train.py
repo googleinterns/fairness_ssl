@@ -19,8 +19,10 @@ import pdb
 from data.tabular import Tabular
 from data.waterbirds import Waterbirds
 from data.celeba import CelebA
+from data.cmnist import CMNIST
 
 from model.fullyconn import FullyConnected
+from model.mlp import MLP
 from torchvision.models import resnet50 as ResNet50
 
 from util.utils import HParams, AverageMeter
@@ -53,12 +55,14 @@ class BaseTrain(object):
     def get_dataset(self):
         """Gets dataset."""
 
-        if self.dataset_name in ['German', 'Adult', 'AdultConfounded']:
+        if self.dataset_name in ['German', 'Adult', 'AdultConfounded', 'Adult2']:
             return Tabular(self.dataset_name, lab_split=self.hp.lab_split)
         elif self.dataset_name in ['Waterbirds']:
             return Waterbirds(lab_split=self.hp.lab_split, reweight=self.hp.flag_reweight)
         elif self.dataset_name in ['CelebA']:
             return CelebA(lab_split=self.hp.lab_split, reweight=self.hp.flag_reweight)
+        elif self.dataset_name in ['CMNIST']:
+            return CMNIST(lab_split=self.hp.lab_split, reweight=self.hp.flag_reweight)
         else:
             raise ValueError('Dataset not supported.')
 
@@ -77,6 +81,10 @@ class BaseTrain(object):
             model = FullyConnected(input_dim=input_dim,\
                                    latent_dim=self.hp.latent_dim,
                                    n_targets=n_targets)
+        elif self.hp.model_type == 'mlp':
+            model = MLP(input_dim=input_dim,\
+                        latent_dim=self.hp.latent_dim,
+                        n_targets=n_targets)
         elif self.hp.model_type == 'resnet50':
             model = ResNet50(pretrained=True) # default model is pretrained
             last_dim = model.fc.in_features

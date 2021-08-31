@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from model.fullyconn import FullyConnected
 
 from util.train import BaseTrain
-from util.utils import HParams
+from util.utils import HParams, DEFAULT_MISSING_CONST as DF_M
 from util.metrics_store import MetricsEval
 
 from pytorch_model_summary import summary
@@ -68,7 +68,7 @@ class UnsupDRO(BaseTrain):
         # TODO: eliminate the need for for loops
         prefix = 'train'
         for cid in range(-1, self.dset.n_controls):
-            select = c >= 0 if cid == -1 else c == cid 
+            select = c != DF_M if cid == -1 else c == cid 
             size = sum(select)
             
             self.metrics_dict[f'{prefix}.loss.{cid}'].update(

@@ -16,6 +16,8 @@ import numpy as np
 
 import pdb
 
+TOL = 1e-4
+
 class WorstoffDRO(BaseTrain):
     """
     A method that uses worstoff group assignments for optimizing the Rawlsian Measure.
@@ -56,7 +58,7 @@ class WorstoffDRO(BaseTrain):
         self.solver = Solver(n_controls=self.dset.n_controls, \
                              bsize=self.hp.batch_size,\
                              marginals=self.worstoffdro_marginals)
-
+        
         # params to gpu
         if self.hp.flag_usegpu and torch.cuda.is_available():
             self.weights = self.weights.cuda()
@@ -96,14 +98,8 @@ class WorstoffDRO(BaseTrain):
         g_hat = self.solver.cvxsolve(losses=loss,
                                      weights=self.weights,
                                      Gamma_g=Gamma_g)
-
-        '''
-        # for checks
-        print(torch.argsort(self.weights, descending=True))
-        print(torch.argmax(g_hat[torch.topk(loss, 128)[1], :], 1))
-        print(' ')
-        '''
-        
+        assert (torch.norm(torch.sum(g_hat, 1) - torch.ones(self.hp.batch_size)) < TOL), 'simplex constraints not satisfied'
+        assert (torch.norm(torch.mean(g_hat, 0) - torch.tensor(self.worstoffdro_marginals)) < TOL), 'marginal constraints not satisfied'
         if self.hp.flag_usegpu and torch.cuda.is_available():
             g_hat = g_hat.cuda()
         loss_unlab, loss_unlab_gp = self.compute_loss(g_hat[c==DF_M], loss[c==DF_M])
@@ -128,9 +124,12 @@ class WorstoffDRO(BaseTrain):
         self.weights = self.weights * torch.exp(self.worstoffdro_stepsize*loss_worstoffdro_gp.data)
         self.weights = self.weights/(self.weights.sum())
 
-        # Track GroupDRO weights
+        # Algorithm Trackers
         for i in range(len(self.weights)):
             self.writer.add_scalar(f'train/weights.{i}', self.weights[i], self.epoch)
+            self.writer.add_scalar(f'train/weights_adjusted.{i}', self.weights[i]/self.worstoffdro_marginals[i], self.epoch)
+            self.writer.add_scalar(f'train/g_hat_batch_loss.{i}', loss_unlab_gp[0, i], self.epoch)
+            if sum(c==i) > 0: self.writer.add_scalar(f'train/g_star_batch_loss.{i}', loss[c==i].mean(), self.epoch) 
         
         # Update metrics.
         # Maintains running average over all the metrics

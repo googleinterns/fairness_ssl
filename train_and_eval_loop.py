@@ -19,13 +19,13 @@ import pdb
 
 # Dataset.
 flags.DEFINE_enum(name='dataset', default='Adult',
-                  enum_values=['Adult', 'German', 'Waterbirds', 'AdultConfounded', 'CelebA'],
+                  enum_values=['Adult', 'German', 'Waterbirds', 'AdultConfounded', 'CelebA', 'CMNIST', 'Adult2'],
                   help='dataset.')
 flags.DEFINE_integer(name='dataseed', default=0,
                      help='random seed for dataset construction.')
 # Model.
 flags.DEFINE_enum(name='model_type', default='fullyconn',
-                  enum_values=['fullyconn', 'resnet50'], help='model type.')
+                  enum_values=['fullyconn', 'mlp', 'resnet50'], help='model type.')
 flags.DEFINE_integer(name='latent_dim', default=64,
                      help='latent dims for fully connected network')
 flags.DEFINE_bool(name='flag_usegpu', default=True, help='To use GPU or not')

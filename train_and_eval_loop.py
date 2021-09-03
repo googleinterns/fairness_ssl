@@ -58,9 +58,10 @@ flags.DEFINE_string(name='ckpt_prefix', default='results',
 flags.DEFINE_string(name='ckpt_path', default='',
                     help='path to save model.')
 
-# Debug mode.
+# Experiment modes.
 flags.DEFINE_bool(name='flag_debug', default=False, help='Enables Debug Mode')
 flags.DEFINE_bool(name='flag_singlebatch', default=False, help='Enables Debug Mode')
+flags.DEFINE_bool(name='flag_run_all', default=False, help='Enables hyper-param search mode')
 
 # DRO hyper-params
 flags.DEFINE_float(name='groupdro_stepsize', default=0.01, help='step size.')

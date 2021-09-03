@@ -201,7 +201,12 @@ class BaseTrain(object):
             ckpt_path = self.hp.ckpt_path
         elif self.hp.flag_debug:
             ckpt_path = f'{self.dataset_name}_{self.__class__.__name__}_debug'
+        elif self.hp.flag_run_all:
+            ckpt_path = f'{self.dataset_name}_{self.__class__.__name__}'
+            suffix = f'_Partial{int(self.hp.lab_split*100)}' if self.hp.lab_split < 1.0 else ''
+            ckpt_path = ckpt_path + suffix
         else:
+            # Default mode
             runTime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             ckpt_path = f'{self.dataset_name}_{self.__class__.__name__}'
             suffix = f'_Partial{int(self.hp.lab_split*100)}' if self.hp.lab_split < 1.0 else ''
@@ -219,15 +224,19 @@ class BaseTrain(object):
                   'lab_split', self.hp.lab_split,
                   'reweight', self.hp.flag_reweight]
         self.params_str = '_'.join([str(x) for x in params])
-        
 
     def set_ckpt_path(self):
         """Sets file paths to save model, tensorboard, etc."""
 
         if self.file_suffix:
             self.ckpt_path = f'{self.ckpt_path}_{self.file_suffix}'
+        if self.hp.flag_run_all:
+            iterm_path = self.params_str.replace('seed_'+str(self.hp.seed), '')
+            self.ckpt_path = os.path.join(self.ckpt_path, iterm_path)
+            self.ckpt_path = os.path.join(self.ckpt_path, 'run_'+str(self.hp.seed))
+            
         self.ckpt_path = self.ckpt_path.replace('__', '_')
-
+        
         # Set paths for saved model, tensorboard and eval stats.
         self.ckpt_path = os.path.join(self.hp.ckpt_prefix, self.ckpt_path)
         self.log_path = os.path.join(self.ckpt_path, 'log.txt')

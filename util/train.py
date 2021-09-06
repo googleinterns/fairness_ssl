@@ -25,7 +25,7 @@ from model.fullyconn import FullyConnected
 from model.mlp import MLP
 from torchvision.models import resnet50 as ResNet50
 
-from util.utils import HParams, AverageMeter
+from util.utils import HParams, AverageMeter, CSVLogger
 
 from util.metrics_store import MetricsEval
 
@@ -41,16 +41,18 @@ class BaseTrain(object):
         # Set file path to save.
         self.get_ckpt_path_suffix() # sets self.file_suffix        
         self.get_ckpt_path() # 
-        self.set_ckpt_path() # sets self.ckpt_path, self.tb_path, self.stat_path
+        self.set_ckpt_path() # sets self.ckpt_path, self.tb_path, self.stats_path
 
         # Set the logpaths
         self.logf = open(self.log_path, 'w')
         self.logf.write(self.params_str + '\n')
-        self.logf.close()
+        self.logf.flush()
         
         # Set tensorboards.
         self.writer = SummaryWriter(log_dir=self.tb_path)
-        
+
+        # Set csv logger
+        self.csvlogger = CSVLogger(log_dir=self.stats_path)
 
     def get_dataset(self):
         """Gets dataset."""
@@ -241,14 +243,14 @@ class BaseTrain(object):
         self.ckpt_path = os.path.join(self.hp.ckpt_prefix, self.ckpt_path)
         self.log_path = os.path.join(self.ckpt_path, 'log.txt')
         self.tb_path = os.path.join(self.ckpt_path, 'tb')
-        self.stat_path = os.path.join(self.ckpt_path, 'stat')
+        self.stats_path = os.path.join(self.ckpt_path, 'stats')
         print(self.ckpt_path)
         if not os.path.exists(self.ckpt_path):
             os.makedirs(self.ckpt_path)
         if not os.path.exists(self.tb_path):
             os.makedirs(self.tb_path)
-        if not os.path.exists(self.stat_path):
-            os.makedirs(self.stat_path)
+        if not os.path.exists(self.stats_path):
+            os.makedirs(self.stats_path)
 
     def get_config(self):
         """Gets config."""
@@ -261,6 +263,9 @@ class BaseTrain(object):
         # Data loader.
         self.train_loader, self.val_loader, \
             self.test_loader, self.dset = self.get_dataloader()
+
+        # Configure the stats file
+        self.csvlogger.set_header(n_controls=self.dset.n_controls)
 
         # Model architecture (using DataParallel).
         dummy_x, _, _ = self.dset.train_set.__getitem__(0)
@@ -340,6 +345,24 @@ class BaseTrain(object):
                 score = MetricsEval().roc_auc(self.metrics_dict[f'{p}.y_score.{cid}'],\
                                               self.metrics_dict[f'{p}.y_true.{cid}'])
                 self.writer.add_scalar(f'{p}/{m}.{cid}', score, self.epoch)                
+
+        # CSV logging
+        self.csvlogger.init_stats_dict(epoch=self.epoch)
+        for p in ['train', 'val', 'test']:
+            for cid in range(-1, self.dset.n_controls):
+                m = 'loss'
+                score = self.metrics_dict[f'{p}.{m}.{cid}'].get_avg().item()
+                self.csvlogger.add_item_dict(f'{p}.{m}.{cid}', score)
+                
+                m = 'acc'
+                score = self.metrics_dict[f'{p}.{m}.{cid}'].get_avg().item()
+                self.csvlogger.add_item_dict(f'{p}.{m}.{cid}', score)
+                
+                m = 'auc'
+                score = MetricsEval().roc_auc(self.metrics_dict[f'{p}.y_score.{cid}'],\
+                                              self.metrics_dict[f'{p}.y_true.{cid}'])
+                self.csvlogger.add_item_dict(f'{p}.{m}.{cid}', score)
+        self.csvlogger.write_stats_dict()
                 
     def dump_stats_to_json(self):
         """Dumps metrics to json.
@@ -374,6 +397,8 @@ class BaseTrain(object):
         """Calls at the end of the training."""
 
         self.writer.close()
+        self.csvlogger.close()
+        self.logf.close()
         self.save_checkpoint('last')
         self.dump_stats_to_json()
 
@@ -392,7 +417,6 @@ class BaseTrain(object):
         """Requires self.metrics to be defined"""
         
         self.reset_metrics_dict(prefix='train')
-        self.logf = open(self.log_path, 'a+')
         self.train_time = time.time()
 
     def train_epoch_end(self):
@@ -416,8 +440,9 @@ class BaseTrain(object):
             updatelog = False
         
         self.monitor(updatelog)
+        self.csvlogger.flush()
+        self.logf.flush()        
         self.save_checkpoint('ckpt', updatelog)
-        self.logf.close()
 
     def train_step(self, batch):
         """Trains a model for one step."""

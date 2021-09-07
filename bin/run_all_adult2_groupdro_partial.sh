@@ -16,9 +16,10 @@ do
 		   --learning_rate "$lr" \
 		   --weight_decay "$wd" \
 		   --groupdro_stepsize "$param" \
+		   --lab_split 0.1 \
 		   --ckpt_prefix "results_all" \
 		   --flag_run_all \
-		   --gpu_ids '0'
+		   --gpu_ids '2'
 	done
     done
 done

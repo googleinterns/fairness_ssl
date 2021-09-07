@@ -12,11 +12,11 @@ do
 		   --optimizer 'Adam' \
 		   --batch_size 128 \
 		   --noflag_saveckpt \
-		   --num_epoch 201 \
+		   --num_epoch 2 \
 		   --learning_rate "$lr" \
 		   --weight_decay "$wd" \
 		   --groupdro_stepsize "$param" \
-		   --ckpt_prefix "results_all" \
+		   --ckpt_prefix "results_temp" \
 		   --flag_run_all \
 		   --gpu_ids '0'
 	done

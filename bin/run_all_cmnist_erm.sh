@@ -2,6 +2,8 @@ for lr in 0.001 0.0001 0.00001
 do
     for wd in 0.01 0.001 0.0001
     do
+	for sd in 43 44
+	do
 	python train_and_eval_loop.py \
 	       --dataset 'CMNIST' \
 	       --model_type 'mlp' \
@@ -14,7 +16,8 @@ do
 	       --num_epoch 501 \
 	       --weight_decay "$wd" \
 	       --ckpt_prefix "results_all" \
-	       --flag_run_all \
-	       --gpu_ids '4'
+	       --flag_run_all &
+	done
     done
 done
+wait

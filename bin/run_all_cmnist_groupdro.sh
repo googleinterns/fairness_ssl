@@ -4,6 +4,8 @@ do
     do
 	for param in 0.01 0.001 0.0001
 	do
+	    for sd in 43 44
+	    do
 	    python train_and_eval_loop.py \
 		   --dataset 'CMNIST' \
 		   --model_type 'mlp' \
@@ -17,8 +19,9 @@ do
 		   --weight_decay "$wd"  \
 		   --groupdro_stepsize "$param" \
 		   --ckpt_prefix "results_all" \
-		   --flag_run_all \
-		   --gpu_ids '1'
+		   --flag_run_all &
+	    done
 	done
     done
 done
+wait

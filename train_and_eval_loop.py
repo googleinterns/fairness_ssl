@@ -16,6 +16,7 @@ from util.utils import HParams
 
 import os
 import pdb
+import random
 
 # Dataset.
 flags.DEFINE_enum(name='dataset', default='Adult',
@@ -29,7 +30,7 @@ flags.DEFINE_enum(name='model_type', default='fullyconn',
 flags.DEFINE_integer(name='latent_dim', default=64,
                      help='latent dims for fully connected network')
 flags.DEFINE_bool(name='flag_usegpu', default=True, help='To use GPU or not')
-flags.DEFINE_string(name='gpu_ids', default='0,1,2,3,4,5,6,7', help='gpu_ids')
+flags.DEFINE_string(name='gpu_ids', default=str(random.randrange(8)), help='gpu_ids')
 flags.DEFINE_bool(name='flag_saveckpt', default=True, help='To save checkpoints or not')
 
 # Optimization.

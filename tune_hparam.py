@@ -32,9 +32,12 @@ def main(unused_argv):
     for subdir in os.listdir(hp.directory):
         if subdir.endswith(".txt"):
             continue
-        csv_path = os.path.join(hp.directory, subdir, 'run_42', 'stats', 'stats.csv')
+        csv_path = os.path.join(hp.directory, subdir, 'run_44', 'stats', 'stats.csv')
         data = np.genfromtxt(csv_path, dtype=None, delimiter=',', names=True, deletechars="") 
 
+        if len(data) < 1:
+            print(f'{subdir} did not finish run')
+            continue
         # Place the inside a numpy nd array and keep appending the numpy nd array.
         val_array = np.append(val_array, values=[[data[f'val.acc.-1'][-1], data[f'val.acc.{hp.min_c}'][-1]]], axis=0)
         test_array = np.append(test_array, values=[[data[f'test.acc.-1'][-1], data[f'test.acc.{hp.min_c}'][-1]]], axis=0)
@@ -53,11 +56,13 @@ def main(unused_argv):
     test_array_sorted = test_array[sort_idx]
     subdir_array_sorted = [subdir_array[idx] for idx in sort_idx]
 
+
     # Among top hp.nvp_th accuracies, pick the highest min_c accuracy. Pick corresponding test and test_min_c accuracy    
     select_idx = val_array_sorted[:hp.nvp_th, min_c_idx].argmax()
     select_val = val_array_sorted[select_idx]
     select_test = test_array_sorted[select_idx]
     select_subdir = subdir_array_sorted[select_idx]
+
 
     '''
     # Among accuracies>hp.nvp_percent  of best accuracy, pick the highest min_c accuracy.

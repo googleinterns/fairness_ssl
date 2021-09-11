@@ -18,6 +18,7 @@ do
 		   --num_epoch 1 \
 		   --weight_decay "$wd"  \
 		   --groupdro_stepsize "$param" \
+		   --lab_split 0.1 \
 		   --seed "$sd" \
 		   --ckpt_prefix "results_temp" \
 		   --flag_run_all &

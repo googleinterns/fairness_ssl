@@ -4,6 +4,8 @@ do
     do
 	for param in 0.01 0.001 0.0001
 	do
+	    for sd in 43 44
+	    do
 	    python train_and_eval_loop.py \
 		   --dataset 'Adult2' \
 		   --method 'groupdro' \
@@ -12,14 +14,15 @@ do
 		   --optimizer 'Adam' \
 		   --batch_size 128 \
 		   --noflag_saveckpt \
-		   --num_epoch 2 \
+		   --num_epoch 1 \
 		   --learning_rate "$lr" \
 		   --weight_decay "$wd" \
 		   --groupdro_stepsize "$param" \
+		   --seed "$sd" \
 		   --ckpt_prefix "results_temp" \
-		   --flag_run_all \
-		   --gpu_ids '0'
+		   --flag_run_all &
+	    done
 	done
     done
 done
-			   
+wait

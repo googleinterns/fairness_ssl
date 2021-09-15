@@ -29,8 +29,6 @@ from util.utils import HParams, AverageMeter, CSVLogger
 
 from util.metrics_store import MetricsEval
 
-import tensorflow as tf
-
 class BaseTrain(object):
     """Base model trainer."""
 

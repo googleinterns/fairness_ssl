@@ -1,7 +1,5 @@
 absl-py
 tqdm
-tensorflow
-tensorflow_datasets
 tensorboard
 torch
 torchvision

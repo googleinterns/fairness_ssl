@@ -16,7 +16,7 @@ from util.utils import DEFAULT_MISSING_CONST as DF_M
 
 import pdb
 
-ROOT_DIRECTORY = 'data/datasets/celeba_dataset/'
+DATA_DIRECTORY = 'data/datasets/celeba_dataset/'
     
 class CelebA(object):
     """CelebA data loader."""
@@ -24,7 +24,7 @@ class CelebA(object):
     def __init__(self, lab_split = 1.0, reweight=False, seed = 42):
         print('Using CelebA dataset!')
 
-        self.root_dir = ROOT_DIRECTORY
+        self.root_dir = DATA_DIRECTORY
         self.dataseed = seed
         self.lab_split = lab_split
         self.reweight = reweight

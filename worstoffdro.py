@@ -32,8 +32,6 @@ class WorstoffDRO(BaseTrain):
     def get_ckpt_path(self):
         super(WorstoffDRO, self).get_ckpt_path()
         new_params = ['_worstoffdro_stepsize', self.hp.worstoffdro_stepsize,
-                      '_worstoffdro_lambda', self.hp.worstoffdro_lambda,
-                      '_worstoffdro_latestart', self.hp.worstoffdro_latestart,
                       '_worstoffdro_marginals', '-'.join(self.hp.worstoffdro_marginals)]
         self.params_str += '_'.join([str(x) for x in new_params])
         print(self.params_str)

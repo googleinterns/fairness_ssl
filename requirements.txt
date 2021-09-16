@@ -1,10 +1,12 @@
 absl-py
 tqdm
 tensorboard
-torch
-torchvision
+torch==1.9.0+cu111
+torchvision==0.10.0+cu111
 pytorch_model_summary
 easydict
 scikit-learn
 pandas
 cvxpy
+google-cloud-storage
+google-api-python-client

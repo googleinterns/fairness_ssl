@@ -13,6 +13,7 @@ from unsupdro import UnsupDRO
 from worstoffdro import WorstoffDRO
 
 from util.utils import HParams
+from util.utils import upload
 
 import os
 import pdb
@@ -32,6 +33,8 @@ flags.DEFINE_integer(name='latent_dim', default=64,
 flags.DEFINE_bool(name='flag_usegpu', default=True, help='To use GPU or not')
 flags.DEFINE_string(name='gpu_ids', default=str(random.randrange(8)), help='gpu_ids')
 flags.DEFINE_bool(name='flag_saveckpt', default=True, help='To save checkpoints or not')
+flags.DEFINE_bool(name='flag_upload_to_gcs_bucket', default=False, help='To upload artifacts to GCS bucket')
+flags.DEFINE_string(name='gcs_bucket', default='', help='GCS bucket name')
 
 # Optimization.
 flags.DEFINE_enum(name='method', default='erm',
@@ -119,6 +122,13 @@ def main(unused_argv):
     # Run the training routine
     trainer.get_config()
     trainer.train()
+    
+    # Upload to GCS bucket
+    if hparams.flag_upload_to_gcs_bucket:
+        upload(upload_dir=trainer.ckpt_path,
+               gcs_bucket=hparams.gcs_bucket,
+               output_dir=os.path.join('results',
+               trainer.ckpt_path.replace(trainer.hp.ckpt_prefix, '')))
 
 
 if __name__ == '__main__':

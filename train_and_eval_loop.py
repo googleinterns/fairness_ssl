@@ -13,6 +13,7 @@ from unsupdro import UnsupDRO
 from worstoffdro import WorstoffDRO
 
 from util.utils import HParams
+from util.utils import upload
 
 import os
 import pdb

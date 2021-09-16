@@ -22,7 +22,7 @@ ADULT_VALIDATION_SPLIT = 0.5
 GERMAN_VAL_SPLIT = 0.2
 GERMAN_TEST_SPLIT = 0.2
 
-DATA_DIRECTORY = "datasets/"
+DATA_DIRECTORY = 'data/datasets/'
 
 def maybe_download(adult_flag=False, german_flag=False):
   if not adult_flag and not german_flag:

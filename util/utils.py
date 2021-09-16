@@ -5,6 +5,9 @@ import pdb
 import csv
 import os
 
+from absl import logging
+from google.cloud import storage
+
 DEFAULT_MISSING_CONST = -42
 
 def flip_bit(a, b):
@@ -88,9 +91,16 @@ class CSVLogger(object):
     def close(self):
         self.csv_file.close()
 
-    
 
-
-
-
-    
+def upload(upload_dir, gcs_bucket, output_dir):
+    """Upload files from a directory to GCS."""
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(gcs_bucket)
+    for dirpath, _, filenames in os.walk(upload_dir):
+        for name in filenames:
+            filename = os.path.join(dirpath, name)
+            blob = storage.Blob(os.path.join(output_dir, name), bucket)
+            with open(filename, 'rb') as f:
+                blob.upload_from_file(f)
+            logging.info('blob path: %s', blob.path)
+            logging.info('bucket path: gs://%s/%s', gcs_bucket, output_dir)

@@ -130,7 +130,7 @@ def main(unused_argv):
         upload(upload_dir=trainer.ckpt_path,
                gcs_bucket=hparams.gcs_bucket,
                output_dir=os.path.join('results',
-               trainer.ckpt_path.replace(trainer.hp.ckpt_prefix, '')))
+               trainer.ckpt_path.replace(trainer.hp.ckpt_prefix, '')[1:]))
 
 
 if __name__ == '__main__':

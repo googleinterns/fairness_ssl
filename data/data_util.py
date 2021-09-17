@@ -457,6 +457,7 @@ class ImageFromLMDB(torch.utils.data.Dataset):
     return [(os.path.join(data_dir, f), f) for f in filename if self.is_valid(data_dir, f)]
 
   def create_lmdb(self, imlist, mdb_name):
+    print('Creates LMDB...')
     env = lmdb.open(mdb_name, map_size=1000*2**30)
     with env.begin(write=True) as txn:
       for i in trange(len(imlist)):

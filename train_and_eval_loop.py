@@ -25,6 +25,8 @@ flags.DEFINE_enum(name='dataset', default='Adult',
                   help='dataset.')
 flags.DEFINE_integer(name='dataseed', default=0,
                      help='random seed for dataset construction.')
+flags.DEFINE_bool(name='get_dataset_from_lmdb', default=False,
+                  help='Gets dataset from LMDB for large image datasets.')
 # Model.
 flags.DEFINE_enum(name='model_type', default='fullyconn',
                   enum_values=['fullyconn', 'mlp', 'resnet50'], help='model type.')

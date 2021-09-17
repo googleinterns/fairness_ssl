@@ -69,44 +69,24 @@ class CelebA(object):
         # Create Torch Custom Datasets
         self.data_dir = os.path.join(self.root_dir, 'img_align_celeba')
         if self.get_dataset_from_lmdb:
-            self.data_set = data_util.ImageFromLMDB(filename=self.filename,
-                                                    target=self.target,
-                                                    control=self.control,
-                                                    data_dir=self.data_dir,
-                                                    transform=eval_transform)
+            self.alldata_set = data_util.ImageFromLMDB(filename=self.filename,
+                                                       target=self.target,
+                                                       control=self.control,
+                                                       data_dir=self.data_dir,
+                                                       transform=eval_transform)
         else:
-            self.data_set = data_util.ImageFromDisk(filename=self.filename,
-                                                    target=self.target,
-                                                    control=self.control,
-                                                    data_dir=self.data_dir,
-                                                    transform=eval_transform)
-        self.train_set = torch.utils.data.Subset(self.data_set,
+            self.alldata_set = data_util.ImageFromDisk(filename=self.filename,
+                                                       target=self.target,
+                                                       control=self.control,
+                                                       data_dir=self.data_dir,
+                                                       transform=eval_transform)
+        self.train_set = torch.utils.data.Subset(self.alldata_set,
                                                  np.where(self.split_idx==0)[0])
         self.train_set.dataset.transform = train_transform
-        self.val_set = torch.utils.data.Subset(self.data_set,
+        self.val_set = torch.utils.data.Subset(self.alldata_set,
                                                np.where(self.split_idx==1)[0])
-        self.test_set = torch.utils.data.Subset(self.data_set,
+        self.test_set = torch.utils.data.Subset(self.alldata_set,
                                                 np.where(self.split_idx==2)[0])
-
-
-        self.train_set = data_util.ImageFromDisk(filename=fn_train, \
-                                                   target=y_train, \
-                                                   control=self.c_train,
-                                                   data_dir=self.data_dir,
-                                                   transform=train_transform)
-        
-        self.val_set = data_util.ImageFromDisk(filename=fn_valid, \
-                                                 target=y_valid, \
-                                                 control=c_valid,
-                                                 data_dir=self.data_dir,
-                                                 transform=eval_transform)
-        
-        self.test_set = data_util.ImageFromDisk(filename=fn_test, \
-                                                  target=y_test, \
-                                                  control=c_test,
-                                                  data_dir=self.data_dir,
-                                                  transform=eval_transform)
-        return
     
     def generate_splits(self):
         """Create the splits in filename, targets and controls

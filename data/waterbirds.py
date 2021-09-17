@@ -66,23 +66,23 @@ class Waterbirds(object):
 
         # Create Torch Custom Datasets
         if self.get_dataset_from_lmdb:
-            self.data_set = data_util.ImageFromLMDB(filename=self.filename,
-                                                    target=self.target,
-                                                    control=self.control,
-                                                    data_dir=self.data_dir,
-                                                    transform=eval_transform)
+            self.alldata_set = data_util.ImageFromLMDB(filename=self.filename,
+                                                       target=self.target,
+                                                       control=self.control,
+                                                       data_dir=self.data_dir,
+                                                       transform=eval_transform)
         else:
-            self.data_set = data_util.ImageFromDisk(filename=self.filename,
-                                                    target=self.target,
-                                                    control=self.control,
-                                                    data_dir=self.data_dir,
-                                                    transform=eval_transform)
-        self.train_set = torch.utils.data.Subset(self.data_set,
+            self.alldata_set = data_util.ImageFromDisk(filename=self.filename,
+                                                       target=self.target,
+                                                       control=self.control,
+                                                       data_dir=self.data_dir,
+                                                       transform=eval_transform)
+        self.train_set = torch.utils.data.Subset(self.alldata_set,
                                                  np.where(self.split_idx==0)[0])
         self.train_set.dataset.transform = train_transform
-        self.val_set = torch.utils.data.Subset(self.data_set,
+        self.val_set = torch.utils.data.Subset(self.alldata_set,
                                                np.where(self.split_idx==1)[0])
-        self.test_set = torch.utils.data.Subset(self.data_set,
+        self.test_set = torch.utils.data.Subset(self.alldata_set,
                                                 np.where(self.split_idx==2)[0])
 
     def generate_splits(self):

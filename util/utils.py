@@ -13,6 +13,11 @@ DEFAULT_MISSING_CONST = -42
 def flip_bit(a, b):
     return (a-b).abs()
 
+
+def remove_first_string_from_string(s, d):
+    return d.join(x for x in s.split(d) if x)
+
+
 class HParams(dict):
     """Custom dictionary that allows to access dict values as attributes."""
 

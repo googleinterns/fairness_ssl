@@ -14,6 +14,7 @@ from worstoffdro import WorstoffDRO
 
 from util.utils import HParams
 from util.utils import upload
+from util.utils import remove_first_string_from_string
 
 import os
 import pdb
@@ -130,7 +131,10 @@ def main(unused_argv):
         upload(upload_dir=trainer.ckpt_path,
                gcs_bucket=hparams.gcs_bucket,
                output_dir=os.path.join('results',
-               trainer.ckpt_path.replace(trainer.hp.ckpt_prefix, '')[1:]))
+                remove_first_string_from_string(
+                    trainer.ckpt_path.replace(trainer.hp.ckpt_prefix, ''), '/')
+                )
+               )
 
 
 if __name__ == '__main__':

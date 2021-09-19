@@ -38,7 +38,9 @@ flags.DEFINE_string(name='gpu_ids', default=str(random.randrange(8)), help='gpu_
 flags.DEFINE_bool(name='flag_saveckpt', default=True, help='To save checkpoints or not')
 flags.DEFINE_bool(name='flag_upload_to_gcs_bucket', default=False, help='To upload artifacts to GCS bucket')
 flags.DEFINE_string(name='gcs_bucket', default='', help='GCS bucket name')
-flags.DEFINE_string(name='gcs_bucket_path_prefix', default='results', help='GCS bucket path prefix.')
+flags.DEFINE_string(name='gcs_bucket_path_prefix',
+                    default='results',
+                    help='GCS bucket path prefix.')
 
 # Optimization.
 flags.DEFINE_enum(name='method', default='erm',
@@ -117,7 +119,7 @@ def main(unused_argv):
         })
 
     # Select the GPU machine to run the experiment
-    if hparams.flag_usegpu:
+    if hparams.flag_usegpu and not hparams.flag_upload_to_gcs_bucket:
         os.environ["CUDA_VISIBLE_DEVICES"] = hparams.gpu_ids # do not import torch
   
     # Obtain the code for necessary method

@@ -38,6 +38,7 @@ flags.DEFINE_string(name='gpu_ids', default=str(random.randrange(8)), help='gpu_
 flags.DEFINE_bool(name='flag_saveckpt', default=True, help='To save checkpoints or not')
 flags.DEFINE_bool(name='flag_upload_to_gcs_bucket', default=False, help='To upload artifacts to GCS bucket')
 flags.DEFINE_string(name='gcs_bucket', default='', help='GCS bucket name')
+flags.DEFINE_string(name='gcs_bucket_path_prefix', default='results', help='GCS bucket path prefix.')
 
 # Optimization.
 flags.DEFINE_enum(name='method', default='erm',
@@ -130,7 +131,7 @@ def main(unused_argv):
     if hparams.flag_upload_to_gcs_bucket:
         upload(upload_dir=trainer.ckpt_path,
                gcs_bucket=hparams.gcs_bucket,
-               output_dir=os.path.join('results',
+               output_dir=os.path.join(hparams.gcs_bucket_path_prefix,
                 remove_first_string_from_string(
                     trainer.ckpt_path.replace(trainer.hp.ckpt_prefix, ''), '/')
                 )

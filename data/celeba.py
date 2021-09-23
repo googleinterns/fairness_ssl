@@ -13,15 +13,21 @@ import torchvision.transforms as transforms
 from data import data_util
 
 from util.utils import DEFAULT_MISSING_CONST as DF_M
+from util.utils import download as download_from_gcs
 
-import pdb
 
 DATA_DIRECTORY = 'data/datasets/celeba_dataset/'
-    
+
+
 class CelebA(object):
     """CelebA data loader."""
 
-    def __init__(self, lab_split = 1.0, reweight=False, seed = 42, get_dataset_from_lmdb=False):
+    def __init__(self,
+                 lab_split=1.0,
+                 reweight=False,
+                 seed=42,
+                 get_dataset_from_lmdb=False,
+                 download=False):
         print('Using CelebA dataset!')
 
         self.root_dir = DATA_DIRECTORY
@@ -30,8 +36,11 @@ class CelebA(object):
         self.reweight = reweight
         self.get_dataset_from_lmdb = get_dataset_from_lmdb
 
-        if not os.path.exists(self.root_dir):
-            raise ValueError(f'{self.root_dir} does not exist yet.')
+        if download and self.get_dataset_from_lmdb:
+            self.download()
+        else:
+            if not os.path.exists(self.root_dir):
+                raise ValueError(f'{self.root_dir} does not exist yet.')
 
         # Read metadata files
         self.metadata = pd.read_csv(os.path.join(self.root_dir, 'list_attr_celeba.csv'))
@@ -87,7 +96,14 @@ class CelebA(object):
                                                np.where(self.split_idx==1)[0])
         self.test_set = torch.utils.data.Subset(self.alldata_set,
                                                 np.where(self.split_idx==2)[0])
-    
+
+    def download(self):
+        download_data_dir = f'/workdir/xcloud_data/{np.random.randint(99999):05d}'
+        download_from_gcs(download_dir='data/datasets/celeba_dataset',
+                          gcs_bucket='xcloud_bucket',
+                          output_dir=download_data_dir)
+        self.root_dir = f'{download_data_dir}/data/datasets/celeba_dataset/'
+
     def generate_splits(self):
         """Create the splits in filename, targets and controls
         """
@@ -196,9 +212,9 @@ class CelebA(object):
 
 if __name__ == '__main__':
     # Compare LMDB-based loader and Disk-based loader
-    db = CelebA(lab_split=0.3, reweight=False, seed=42, get_dataset_from_lmdb=False)
-    loaders_disk = db.load_dataset(batch_size=64)
-    db = CelebA(lab_split=0.3, reweight=False, seed=42, get_dataset_from_lmdb=True)
+    #db = CelebA(lab_split=0.3, reweight=False, seed=42, get_dataset_from_lmdb=False)
+    #loaders_disk = db.load_dataset(batch_size=64)
+    db = CelebA(lab_split=0.3, reweight=False, seed=42, get_dataset_from_lmdb=True, download=True)
     loaders_lmdb = db.load_dataset(batch_size=64)
     for batch_disk, batch_lmdb in zip(loaders_disk[1], loaders_lmdb[1]):
         assert torch.norm(batch_disk[0] - batch_lmdb[0]) == 0, 'data are aligned'

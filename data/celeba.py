@@ -27,7 +27,7 @@ class CelebA(object):
                  reweight=False,
                  seed=42,
                  get_dataset_from_lmdb=False,
-                 download=False):
+                 download=True):
         print('Using CelebA dataset!')
 
         self.root_dir = DATA_DIRECTORY
@@ -36,6 +36,7 @@ class CelebA(object):
         self.reweight = reweight
         self.get_dataset_from_lmdb = get_dataset_from_lmdb
 
+        download = download and get_dataset_from_lmdb
         if download and self.get_dataset_from_lmdb:
             self.download()
         else:

@@ -98,7 +98,14 @@ class CSVLogger(object):
 
 
 def upload(upload_dir, gcs_bucket, output_dir):
-    """Upload files from a directory to GCS."""
+    """Upload files from a directory to GCS.
+
+    Args:
+        upload_dir: local directory to upload from.
+        gcs_bucket: gcs bucket name.
+        output_dir: gcs bucket directory to upload folder to.
+    """
+
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(gcs_bucket)
     for dirpath, _, filenames in os.walk(upload_dir):
@@ -109,3 +116,26 @@ def upload(upload_dir, gcs_bucket, output_dir):
                 blob.upload_from_file(f)
             logging.info('blob path: %s', blob.path)
             logging.info('bucket path: gs://%s/%s', gcs_bucket, output_dir)
+
+
+def download(download_dir, gcs_bucket, output_dir):
+    """Download entire folder from GCS bucket.
+
+    Args:
+        download_dir: gcs bucket directory we want to downoload from.
+        gcs_bucket: gcs bucket name
+        output_dir: local directory to download folder into.
+    """
+
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(gcs_bucket)
+    for blob in bucket.list_blobs(prefix=download_dir):
+        print(blob.name)
+        if blob.name.endswith("/"):
+            continue
+        destination_file_name = os.path.join(output_dir, blob.name)
+        if not os.path.exists(os.path.dirname(destination_file_name)):
+            os.makedirs(os.path.dirname(destination_file_name))
+        blob.download_to_filename(destination_file_name)
+        logging.info('blob path: %s', blob.path)
+        logging.info('output file: %s', destination_file_name)

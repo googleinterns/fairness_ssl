@@ -14,6 +14,7 @@ from worstoffdro import WorstoffDRO
 
 from util.utils import HParams
 from util.utils import upload
+from util.utils import remove_first_string_from_string
 
 import os
 import pdb
@@ -25,6 +26,8 @@ flags.DEFINE_enum(name='dataset', default='Adult',
                   help='dataset.')
 flags.DEFINE_integer(name='dataseed', default=0,
                      help='random seed for dataset construction.')
+flags.DEFINE_bool(name='get_dataset_from_lmdb', default=False,
+                  help='Gets dataset from LMDB for large image datasets.')
 # Model.
 flags.DEFINE_enum(name='model_type', default='fullyconn',
                   enum_values=['fullyconn', 'mlp', 'resnet50'], help='model type.')
@@ -35,6 +38,9 @@ flags.DEFINE_string(name='gpu_ids', default=str(random.randrange(8)), help='gpu_
 flags.DEFINE_bool(name='flag_saveckpt', default=True, help='To save checkpoints or not')
 flags.DEFINE_bool(name='flag_upload_to_gcs_bucket', default=False, help='To upload artifacts to GCS bucket')
 flags.DEFINE_string(name='gcs_bucket', default='', help='GCS bucket name')
+flags.DEFINE_string(name='gcs_bucket_path_prefix',
+                    default='results',
+                    help='GCS bucket path prefix.')
 
 # Optimization.
 flags.DEFINE_enum(name='method', default='erm',
@@ -113,7 +119,7 @@ def main(unused_argv):
         })
 
     # Select the GPU machine to run the experiment
-    if hparams.flag_usegpu:
+    if hparams.flag_usegpu and not hparams.flag_upload_to_gcs_bucket:
         os.environ["CUDA_VISIBLE_DEVICES"] = hparams.gpu_ids # do not import torch
   
     # Obtain the code for necessary method
@@ -127,8 +133,11 @@ def main(unused_argv):
     if hparams.flag_upload_to_gcs_bucket:
         upload(upload_dir=trainer.ckpt_path,
                gcs_bucket=hparams.gcs_bucket,
-               output_dir=os.path.join('results',
-               trainer.ckpt_path.replace(trainer.hp.ckpt_prefix, '')))
+               output_dir=os.path.join(hparams.gcs_bucket_path_prefix,
+                remove_first_string_from_string(
+                    trainer.ckpt_path.replace(trainer.hp.ckpt_prefix, ''), '/')
+                )
+               )
 
 
 if __name__ == '__main__':

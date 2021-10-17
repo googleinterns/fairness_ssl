@@ -9,9 +9,13 @@ from PIL import Image
 import numpy as np
 import pandas as pd
 import joblib
+import lmdb
+from tqdm import trange
 
 import torch
+from torchvision.datasets.folder import is_image_file
 
+import six
 from six.moves import urllib
 import pdb
 
@@ -351,7 +355,7 @@ class ArrayFromMemory(torch.utils.data.Dataset):
     x = self.data[index, :].astype(float)
     y = int(self.target[index])
     c = int(self.control[index])
-    return torch.tensor(x).float(), torch.tensor(y).long(), torch.tensor(c).long()    
+    return torch.tensor(x).float(), torch.tensor(y).long(), torch.tensor(c).long()
 
 class ImageFromDisk(torch.utils.data.Dataset):
   """Creates a custom dataset for imaging data
@@ -426,3 +430,84 @@ def resample(data, target, control, n_controls = 4, seed=42, probs = [0.94, 0.06
   return data, target, control
       
   
+class ImageFromLMDB(torch.utils.data.Dataset):
+  """Creates a custom dataset for image data by reading from LMDB format."""
+
+  def __init__(self, filename, target, control, data_dir, mdb_path=None, transform=None):
+    super(ImageFromLMDB, self).__init__()
+    mdb_name, txt_name = self.create_lmdb_from_filename(data_dir, filename, mdb_path=mdb_path)
+    self.env = lmdb.open(mdb_name,
+                         max_readers=1,
+                         readonly=True,
+                         lock=False,
+                         readahead=False,
+                         meminit=False)
+    with self.env.begin(write=False) as txn:
+      self.length = txn.stat()['entries']
+    self.data_dir = data_dir
+    self.sample_key = [line.split()[0].encode() for line in open(txt_name, 'r').readlines()]
+    self.target = target
+    self.control = control
+    self.transform = transform
+
+  def is_valid(self, data_dir, line):
+    return True if is_image_file(os.path.join(data_dir, line.split()[0])) else False
+
+  def read_image_list(self, data_dir, filename):
+    return [(os.path.join(data_dir, f), f) for f in filename if self.is_valid(data_dir, f)]
+
+  def create_lmdb(self, imlist, mdb_name):
+    print('Creates LMDB...')
+    env = lmdb.open(mdb_name, map_size=1000*2**30)
+    with env.begin(write=True) as txn:
+      for i in trange(len(imlist)):
+        path, key = imlist[i]
+        with open(path, 'rb') as fd:
+          rawBytes = fd.read()
+          txn.put(key.encode(), rawBytes)
+
+  def create_lmdb_from_filename(self, data_dir, filename, mdb_path=None):
+    if mdb_path is None:
+      mdb_path = os.path.join(data_dir, 'lmdb')
+    mdb_name = os.path.join(mdb_path, 'data.mdb')
+    txt_name = os.path.join(mdb_path, 'data.txt')
+
+    if not os.path.exists(mdb_path):
+      os.makedirs(mdb_path)
+
+    if os.path.exists(mdb_name):
+      return mdb_name, txt_name
+
+    # Generate (fpath, label) pairs by reading from txt file.
+    imlist = self.read_image_list(data_dir, filename)
+    self.create_lmdb(imlist, mdb_name)
+
+    # Write new text file that includes only files used for creating LMDB.
+    with open(txt_name, 'w') as g:
+      g.writelines([f'{imlist[i][1]}\n' for i in range(len(imlist))])
+    return mdb_name, txt_name
+
+  def __len__(self):
+    return len(self.sample_key)
+
+  def __getitem__(self, idx):
+    """Gets items.
+
+    Get image from LMDB and target and control variables from input.
+    """
+    env = self.env
+    key = self.sample_key[idx]
+    with env.begin(write=False) as txn:
+      imgbuf = txn.get(key)
+    buf = six.BytesIO()
+    buf.write(imgbuf)
+    buf.seek(0)
+
+    x = Image.open(buf).convert('RGB')
+    y = self.target[idx]
+    c = self.control[idx]
+
+    if self.transform is not None:
+      x = self.transform(x)
+
+    return x, torch.tensor(y).long(), torch.tensor(c).long()

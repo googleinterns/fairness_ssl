@@ -21,13 +21,14 @@ DATA_DIRECTORY = 'data/datasets/waterbirds_dataset/'
 class Waterbirds(object):
     """Waterbirds data loader."""
 
-    def __init__(self, lab_split = 1.0, reweight=False, seed = 42):
+    def __init__(self, lab_split=1.0, reweight=False, seed=42, get_dataset_from_lmdb=False):
         print('Using Waterbirds dataset!')
 
         self.data_dir = DATA_DIRECTORY
         self.dataseed = seed
         self.lab_split = lab_split
         self.reweight = reweight
+        self.get_dataset_from_lmdb = get_dataset_from_lmdb
       
         if not os.path.exists(self.data_dir):
             raise ValueError(f'{self.data_dir} does not exist yet.')
@@ -56,36 +57,36 @@ class Waterbirds(object):
         self.split_idx = self.metadata['split'].values
 
         # Split train, valid, test
-        fn_train, fn_valid, fn_test, \
-            y_train, y_valid, y_test, \
-            self.c_train, c_valid, c_test = self.generate_splits()
+        (fn_train, fn_valid, fn_test,
+            y_train, y_valid, y_test,
+            self.c_train, c_valid, c_test) = self.generate_splits()
 
         # Get custom transforms
         train_transform, eval_transform = self.get_transforms()
 
         # Create Torch Custom Datasets
-        self.train_set = data_util.ImageFromDisk(filename=fn_train, \
-                                                   target=y_train, \
-                                                   control=self.c_train,
-                                                   data_dir=self.data_dir,
-                                                   transform=train_transform)
-        
-        self.val_set = data_util.ImageFromDisk(filename=fn_valid, \
-                                                 target=y_valid, \
-                                                 control=c_valid,
-                                                 data_dir=self.data_dir,
-                                                 transform=eval_transform)
-        
-        self.test_set = data_util.ImageFromDisk(filename=fn_test, \
-                                                  target=y_test, \
-                                                  control=c_test,
-                                                  data_dir=self.data_dir,
-                                                  transform=eval_transform)
-        return
+        if self.get_dataset_from_lmdb:
+            self.alldata_set = data_util.ImageFromLMDB(filename=self.filename,
+                                                       target=self.target,
+                                                       control=self.control,
+                                                       data_dir=self.data_dir,
+                                                       transform=eval_transform)
+        else:
+            self.alldata_set = data_util.ImageFromDisk(filename=self.filename,
+                                                       target=self.target,
+                                                       control=self.control,
+                                                       data_dir=self.data_dir,
+                                                       transform=eval_transform)
+        self.train_set = torch.utils.data.Subset(self.alldata_set,
+                                                 np.where(self.split_idx==0)[0])
+        self.train_set.dataset.transform = train_transform
+        self.val_set = torch.utils.data.Subset(self.alldata_set,
+                                               np.where(self.split_idx==1)[0])
+        self.test_set = torch.utils.data.Subset(self.alldata_set,
+                                                np.where(self.split_idx==2)[0])
 
     def generate_splits(self):
-        """Create the splits in filename, targets and controls
-        """
+        """Create the splits in filename, targets and controls."""
 
         fn_train = self.filename[self.split_idx == 0] # 0 for train
         fn_valid = self.filename[self.split_idx == 1] # 1 for valid
@@ -103,15 +104,20 @@ class Waterbirds(object):
         if self.lab_split < 1.0:
             #TODO: check uniform sampling
             np.random.seed(self.dataseed)
-            select = np.random.choice([False, True], size=len(c_train),\
-            replace=True, p = [self.lab_split, 1-self.lab_split])
-            c_train[select] = DF_M # DF_M denotes that the label is not available      
-    
+            select = np.random.choice([False, True],
+                                      size=len(c_train),
+                                      replace=True,
+                                      p=[self.lab_split, 1-self.lab_split])
+            # DF_M denotes that the label is not available for train data.
+            c_train[select] = DF_M
+            self.control[np.where(self.split_idx == 0)[0][select]] = DF_M
+
         return (fn_train, fn_valid, fn_test,\
                 y_train, y_valid, y_test,\
                 c_train, c_valid, c_test)
 
     def get_transforms(self):
+        """Gets transformation."""
         scale = 256.0/224.0
         target_resolution = (224, 224)
 
@@ -181,4 +187,11 @@ class Waterbirds(object):
         return [train_loader, val_loader, test_loader]
     
 
-
+if __name__ == '__main__':
+    # Compare LMDB-based loader and Disk-based loader
+    db = Waterbirds(lab_split=0.3, reweight=False, seed=42, get_dataset_from_lmdb=False)
+    loaders_disk = db.load_dataset(batch_size=64)
+    db = Waterbirds(lab_split=0.3, reweight=False, seed=42, get_dataset_from_lmdb=True)
+    loaders_lmdb = db.load_dataset(batch_size=64)
+    for batch_disk, batch_lmdb in zip(loaders_disk[1], loaders_lmdb[1]):
+        assert torch.norm(batch_disk[0] - batch_lmdb[0]) == 0, 'data are aligned'

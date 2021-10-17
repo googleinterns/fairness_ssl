@@ -8,5 +8,7 @@ python train_and_eval_loop.py \
        --batch_size 128 \
        --num_epoch 50 \
        --weight_decay 0.1  \
-       --lab_split 0.9 \
-       --gpu_ids '7'
+       --lab_split 0.005 \
+       --gpu_ids '7' \
+       --seed 43 \
+       --flag_debug

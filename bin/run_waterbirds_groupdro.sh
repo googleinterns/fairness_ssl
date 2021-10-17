@@ -8,5 +8,4 @@ python train_and_eval_loop.py \
        --batch_size 128 \
        --num_epoch 300 \
        --weight_decay 1.0  \
-       --gpu_ids '6,7,3,4,1' \
-       --flag_debug
+       --gpu_ids '1'

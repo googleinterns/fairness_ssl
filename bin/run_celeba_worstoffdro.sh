@@ -12,5 +12,7 @@ python train_and_eval_loop.py \
        --worstoffdro_lambda 1.0 \
        --worstoffdro_latestart 0 \
        --worstoffdro_marginals=.44,.41,.14,.01 \
-       --gpu_ids '3'
+       --gpu_ids '7' \
+       --get_dataset_from_lmdb \
+       --flag_debug 
        

@@ -10,5 +10,6 @@ python train_and_eval_loop.py \
        --learning_rate 0.0001 \
        --weight_decay 0.01 \
        --groupdro_stepsize 0.001 \
-       --gpu_ids '5'
+       --gpu_ids '5' \
+       --flag_debug
 			   

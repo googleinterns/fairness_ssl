@@ -7,4 +7,5 @@ python train_and_eval_loop.py \
        --noflag_saveckpt \
        --batch_size 128 \
        --num_epoch 300 \
-       --weight_decay 1.0 
+       --weight_decay 1.0 \
+       --gpu_ids '2'

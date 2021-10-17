@@ -1,10 +1,2 @@
-bash bin/run_all_adult2_erm.sh;
-bash bin/run_all_adult2_unsupdro.sh;
-bash bin/run_all_adult2_groupdro.sh;
-bash bin/run_all_adult2_groupdro_partial.sh;
-bash bin/run_all_adult2_worstoffdro.sh;
-bash bin/run_all_cmnist_erm.sh;
 bash bin/run_all_cmnist_unsupdro.sh;
-bash bin/run_all_cmnist_groupdro.sh;
-bash bin/run_all_cmnist_groupdro_partial.sh;
-bash bin/run_all_cmnist_worstoffdro.sh;
+bash bin/run_all_adult2_unsupdro.sh;

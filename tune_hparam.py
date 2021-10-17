@@ -34,20 +34,30 @@ def main(unused_argv):
     for subdir in os.listdir(hp.directory):
         if subdir.endswith(".txt"):
             continue
-
+        
+        #choose = ('learning_rate_1e-05' in subdir) and ('weight_decay_0.1' in subdir) and ('stepsize_0.001' in subdir)
+        #if not choose:
+        #    continue
+        
+        #if 'WorstoffDRO' in subdir and not ('stepsize_0.01' in subdir):
+        # continue
+        
         val_item_all = []; val_item_min = [];
         test_item_all = []; test_item_min = [];
         for seed in hp.seed_list:
+
             csv_path = os.path.join(hp.directory, subdir, f'run_{seed}', 'stats', 'stats.csv')
-            
+            if not os.path.isfile(csv_path):
+                csv_path = os.path.join(hp.directory, subdir, f'run_{seed}', 'stats.csv')
+
             try:
                 data = np.genfromtxt(csv_path, dtype=None, delimiter=',', names=True, deletechars="") 
-            except OSError:
-                #print(f'{csv_path} not found')
+            except:
+                #print(f'\n\n TRY ERROR - {csv_path}\n\n')
                 continue
 
             if len(data) < 1:
-                print(f'{subdir} did not finish run')
+                #print(f'\n\n RUN ERROR - {subdir} did not finish run\n\n')
                 continue
 
             # Picking the last epoch measurements
@@ -63,7 +73,21 @@ def main(unused_argv):
 
     val_mean = np.delete(val_mean, (0), axis=0); val_std = np.delete(val_std, (0), axis=0);
     test_mean = np.delete(test_mean, (0), axis=0); test_std = np.delete(test_std, (0), axis=0);
+
+    if 'CelebA' in hp.directory:
+        print(val_mean.shape, val_std.shape,  test_mean.shape, test_std.shape)
+        val_mean = val_mean[~np.isnan(val_mean).any(axis=1)]
+        val_std = val_std[~np.isnan(val_std).any(axis=1)]
+        test_mean = test_mean[~np.isnan(test_mean).any(axis=1)]
+        test_std = test_std[~np.isnan(test_std).any(axis=1)]
+        if (np.isnan(test_mean).any(axis=1)).sum() > 1:
+            subdir_array = np.ones(len(test_std))
     print(val_mean.shape, val_std.shape,  test_mean.shape, test_std.shape)
+
+    #print(repr(test_mean[:, 0]))
+    #print(repr(test_mean[:, 1]))
+    #pdb.set_trace()
+    
     
     # Assign index
     acc_idx = 0
@@ -76,6 +100,14 @@ def main(unused_argv):
     test_mean_sorted = test_mean[sort_idx]
     test_std_sorted = test_std[sort_idx]    
     subdir_array_sorted = [subdir_array[idx] for idx in sort_idx]
+
+    '''
+    print(hp.directory)
+    print(repr(test_mean_sorted[:, 0]))
+    print(repr(test_mean_sorted[:, 1]))
+    print(subdir_array_sorted)
+    print(' ')
+    '''
     
     # Among top hp.nvp_th accuracies, pick the highest min_c accuracy. Pick corresponding test and test_min_c accuracy    
     select_idx = val_mean_sorted[:hp.nvp_th, min_c_idx].argmax()
@@ -105,9 +137,9 @@ def main(unused_argv):
     string_to_print += f'TESTING-- Accuracy: {select_test_mean[acc_idx]:.4f} +- {select_test_std[acc_idx]:.4f} ||||          MinAccuracy: {select_test_mean[min_c_idx]:.4f} +- {select_test_std[min_c_idx]:.4f}\n'
     print(string_to_print)
     
-    # log the result in tune.txt
-    with open(os.path.join(hp.directory, 'tune.txt'), 'w') as f:
-        f.write(string_to_print)
+    ## log the result in tune.txt
+    #with open(os.path.join(hp.directory, 'tune.txt'), 'w') as f:
+    #    f.write(string_to_print)
 
 if __name__ == '__main__':
     app.run(main)

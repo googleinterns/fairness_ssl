@@ -32,7 +32,8 @@ class WorstoffDRO(BaseTrain):
     def get_ckpt_path(self):
         super(WorstoffDRO, self).get_ckpt_path()
         new_params = ['_worstoffdro_stepsize', self.hp.worstoffdro_stepsize,
-                      '_worstoffdro_marginals', '-'.join(self.hp.worstoffdro_marginals)]
+                      '_worstoffdro_marginals', '-'.join(self.hp.worstoffdro_marginals),
+                      '_epsilon', self.hp.epsilon]
         self.params_str += '_'.join([str(x) for x in new_params])
         print(self.params_str)
         
@@ -55,7 +56,8 @@ class WorstoffDRO(BaseTrain):
         # Initialize the solver
         self.solver = Solver(n_controls=self.dset.n_controls, \
                              bsize=self.hp.batch_size,\
-                             marginals=self.worstoffdro_marginals)
+                             marginals=self.worstoffdro_marginals,
+                             epsilon=self.hp.epsilon)
         
         # params to gpu
         if self.hp.flag_usegpu and torch.cuda.is_available():
@@ -92,12 +94,11 @@ class WorstoffDRO(BaseTrain):
         loss_lab, loss_lab_gp = self.compute_loss(g_lab[c!=DF_M], loss[c!=DF_M])
         
         # Get unlabelled loss
-        Gamma_g = self.solver.eval_nearestnbhs(x)
         g_hat = self.solver.cvxsolve(losses=loss,
-                                     weights=self.weights,
-                                     Gamma_g=Gamma_g)
+                                     weights=self.weights)
         assert (torch.norm(torch.sum(g_hat, 1) - torch.ones(self.hp.batch_size)) < TOL), 'simplex constraints not satisfied'
-        assert (torch.norm(torch.mean(g_hat, 0) - torch.tensor(self.worstoffdro_marginals)) < TOL), 'marginal constraints not satisfied'
+        
+        assert (torch.mean(torch.mean(g_hat, 0) - torch.tensor(self.worstoffdro_marginals)) <= self.hp.epsilon), 'marginal constraints not satisfied'
         if self.hp.flag_usegpu and torch.cuda.is_available():
             g_hat = g_hat.cuda()
         loss_unlab, loss_unlab_gp = self.compute_loss(g_hat[c==DF_M], loss[c==DF_M])

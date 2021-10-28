@@ -84,6 +84,7 @@ flags.DEFINE_integer(name='worstoffdro_latestart', default=0,
                      help='epoch at which the unlab loss will be added.')
 flags.DEFINE_list(name='worstoffdro_marginals', default=['.25','.25','.25','.25'],
                   help='Marginal probabilities for each group.')
+flags.DEFINE_float(name='epsilon', default=0.001, help='The tolerance when computing labels with marginal probabilities in WorstoffDRO algorithm.')
 
 # SSL Parameters
 flags.DEFINE_float(name='lab_split', default=1.0,

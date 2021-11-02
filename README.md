@@ -30,19 +30,19 @@ Several run scripts are provided in the `bin/*` directory. The files `bin/run_*`
 An example command with relevant flags is provided below. Details on each flag is available in the file `train_and_eval_loop.py`.
     ```bash
     python train_and_eval_loop.py \
-       --dataset 'Waterbirds' \
-       --model_type 'resnet50' \
-       --method 'worstoffdro' \
-       --optimizer 'SGD' \
-       --learning_rate 1e-5 \
-       --noflag_saveckpt \
-       --batch_size 128 \
-       --num_epoch 300 \
-       --weight_decay 1.0  \
-       --lab_split 0.1 \
-       --worstoffdro_stepsize 0.001 \
-       --worstoffdro_marginals=.53,.25,.07,.15 \
-       --epsilon=0.001 \
-       --ckpt_prefix "results" \
-       --flag_run_all 
+        --dataset 'Waterbirds' \
+        --model_type 'resnet50' \
+        --method 'worstoffdro' \
+        --optimizer 'SGD' \
+        --learning_rate 1e-5 \
+        --noflag_saveckpt \
+        --batch_size 128 \
+        --num_epoch 300 \
+        --weight_decay 1.0  \
+        --lab_split 0.1 \
+        --worstoffdro_stepsize 0.001 \
+        --worstoffdro_marginals=.53,.25,.07,.15 \
+        --epsilon=0.001 \
+        --ckpt_prefix "results" \
+        --flag_run_all 
      ```

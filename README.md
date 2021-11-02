@@ -29,8 +29,7 @@ Several run scripts are provided in the `bin/*` directory. The files `bin/run_*`
 
 An example command with relevant flags is provided below. Details on each flag is available in the file `train_and_eval_loop.py`.
 
-
-    ```bash
+```bash
     python train_and_eval_loop.py \
         --dataset 'Waterbirds' \
         --model_type 'resnet50' \
@@ -47,4 +46,4 @@ An example command with relevant flags is provided below. Details on each flag i
         --epsilon=0.001 \
         --ckpt_prefix "results" \
         --flag_run_all 
-     ```
+```

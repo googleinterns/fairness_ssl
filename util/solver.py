@@ -6,9 +6,6 @@ import pdb
 
 TOL = 1e-6
 
-import cvxpy as cp
-import numpy as np
-
 class Solver(object):
     def __init__(self, n_controls, bsize, marginals, epsilon):
         """Group assignment solver.

@@ -28,6 +28,8 @@ Download or generate the datasets as follows:
 Several run scripts are provided in the `bin/*` directory. The files `bin/run_*` indicate a single hyper-param run whereas `bin/run_all_*` indicate all hyper-param runs. 
 
 An example command with relevant flags is provided below. Details on each flag is available in the file `train_and_eval_loop.py`.
+
+
     ```bash
     python train_and_eval_loop.py \
         --dataset 'Waterbirds' \

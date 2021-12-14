@@ -40,39 +40,21 @@ class EIIL(BaseTrain):
     def get_config(self):
         super(EIIL, self).get_config()
 
-        # Additional parameters
-        self.weights = torch.ones(self.dset.n_controls)/self.dset.n_controls
-        self.map_vector = torch.arange(self.dset.n_controls).unsqueeze(0).long()
-        
+        # Additional Parameters
+        self.est_groups = torch.randn(len(self.dset.train_set)).requires_grad_()
+        self.scale = torch.tensor(1.).requires_grad_()
+
         # Additional hyperparameters
         self.eiil_phase1_done = False
         self.eiil_refmodel_epochs = self.hp.eiil_refmodel_epochs
-        self.worstoffdro_stepsize = self.hp.worstoffdro_stepsize
-        self.worstoffdro_lambda = self.hp.worstoffdro_lambda
-        self.worstoffdro_latestart = self.hp.worstoffdro_latestart
-        self.worstoffdro_marginals = [float(x) for x in self.hp.worstoffdro_marginals]
-        assert (len(self.worstoffdro_marginals) == self.dset.n_controls), "marginals count incorrect"
-        assert (1.-1e-6 <= sum(self.worstoffdro_marginals) <= 1+1e-6), "marginals sum not one"
-        print('marginals in training', self.worstoffdro_marginals)
-        
-        # Initialize the solver
-        self.solver = Solver(n_controls=self.dset.n_controls, \
-                             bsize=self.hp.batch_size,\
-                             marginals=self.worstoffdro_marginals,
-                             epsilon=self.hp.epsilon)
+        self.eiil_phase1_steps = self.hp.eiil_phase1_steps
+        self.eiil_phase1_lr = self.hp.eiil_phase1_lr
         
         # params to gpu
         if self.hp.flag_usegpu and torch.cuda.is_available():
-            self.weights = self.weights.cuda()
-            self.map_vector = self.map_vector.cuda()
+            self.est_groups = self.est_groups.cuda()
+            self.scale = self.scale.cuda()
         
-    def compute_loss(self, sample_groups, sample_losses):
-        sample_counts = sample_groups.sum(0)
-        denom = sample_counts + (sample_counts==0).float()
-        loss_gp = (sample_losses.unsqueeze(0) @ sample_groups) / denom
-        loss = loss_gp.squeeze(0) @ self.weights
-        return loss, loss_gp
-
     def train_reference_model(self):
         # Model architecture for reference model (using DataParallel).
         dummy_x, _, _ = self.dset.train_set.__getitem__(0)
@@ -119,8 +101,57 @@ class EIIL(BaseTrain):
             message=f'Phase 1: {epoch}/{self.eiil_refmodel_epochs} train accuracy-{self.metrics_ref.get_avg()}'
             print(message)
 
+    def infer_groups(self):
+        self.model_ref.eval()
+
+        # optmizer for groups
+        optimizer_groups = optim.Adam([self.est_groups], lr=self.eiil_phase1_lr)
             
-    
+        # optimize over the group labels
+        for epoch in range(self.eiil_phase1_steps):
+            for batch_idx, batch in enumerate(self.train_loader):
+                x = batch[0].float()
+                y = batch[1].long()
+                c = batch[2].long()
+                if self.hp.flag_usegpu and torch.cuda.is_available():
+                    x = x.cuda()
+                    y = y.cuda()
+                    c = c.cuda()
+
+                est_groups_batch = est_groups[batch_idx * self.hp.batch_size:(batch_idx + 1) * self.hp.batch_size]
+
+                # Compute loss 
+                y_logit = self.model_ref(x)
+                y_pred = torch.argmax(y_logit, 1)
+
+                loss = F.cross_entropy(y_logit, y)
+                
+                self.compute_penalty_loss(est_groups_batch, )
+                # Compute gradient.
+                self.optimizer_ref.zero_grad()
+                loss.backward()
+                self.optimizer_ref.step()
+        
+        env_w = torch.randn(len(logits)).cuda().requires_grad_()
+        optimizer = optim.Adam([env_w], lr=0.001)
+
+        print('learning soft environment assignments')
+        for i in tqdm(range(n_steps)):
+            # penalty for env a
+            lossa = (loss.squeeze() * env_w.sigmoid()).mean()
+            grada = autograd.grad(lossa, [scale], create_graph=True)[0]
+            penaltya = torch.sum(grada**2)
+            # penalty for env b
+            lossb = (loss.squeeze() * (1-env_w.sigmoid())).mean()
+            gradb = autograd.grad(lossb, [scale], create_graph=True)[0]
+            penaltyb = torch.sum(gradb**2)
+            # negate
+            npenalty = - torch.stack([penaltya, penaltyb]).mean()
+            
+            optimizer.zero_grad()
+            npenalty.backward(retain_graph=True)
+            optimizer.step()
+            
     def train_step(self, batch):
 
         if self.epoch == 0 and not self.eiil_phase1_done:
@@ -130,6 +161,8 @@ class EIIL(BaseTrain):
             """Run Phase 1 to infer the groups"""
             self.infer_groups()
 
+            """Update Phase 1 flag"""
+            self.eiil_phase1_done = True
 
         
         """Trains a model for one step in Phase 2"""

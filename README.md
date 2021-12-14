@@ -25,7 +25,7 @@ Download or generate the datasets as follows:
 -   CelebA: Download the dataset from [kaggle](https://www.kaggle.com/jessicali9530/celeba-dataset). Place it under `data/datasets/` directory.
 
 ## Running experiment
-Several run scripts are provided in the `bin/*` directory. The files `bin/run_*` indicate a single hyper-param run whereas `bin/run_all_*` indicate all hyper-param runs. 
+Several run scripts are provided in the `bin/*` directory. The files `bin/run_*` indicate a single hyper-param runs. The run files provided with the code contain best hyper-parameters attained after cross-validation.
 
 An example command with relevant flags is provided below. Details on each flag is available in the file `train_and_eval_loop.py`.
 

@@ -86,6 +86,13 @@ flags.DEFINE_list(name='worstoffdro_marginals', default=['.25','.25','.25','.25'
                   help='Marginal probabilities for each group.')
 flags.DEFINE_float(name='epsilon', default=0.001, help='The tolerance when computing labels with marginal probabilities in WorstoffDRO algorithm.')
 
+# EIIL hyper-params
+flags.DEFINE_integer(name='eiil_refmodel_epochs', default=501, help='number of epochs for training the reference model.')
+flags.DEFINE_integer(name='eiil_phase1_steps', default=501, help='number of steps for training the phase1.')
+flags.DEFINE_float(name='eiil_phase1_lr', default=0.0001, help='learning rate of phase1 training.')
+flags.DEFINE_float(name='eill_phase2_penalwt', default=191257, help='regularization coefficient in phase2.')
+flags.DEFINE_integer(name='eiil_phase2_annliter', default=190, help='penalty anneal iterations.')
+
 # SSL Parameters
 flags.DEFINE_float(name='lab_split', default=1.0,
                    help='The ratio of labelled samples in the dataset')

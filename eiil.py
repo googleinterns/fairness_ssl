@@ -20,10 +20,9 @@ TOL = 1e-4
 
 class EIIL(BaseTrain):
     """
-    A method that uses worstoff group assignments for optimizing the Rawlsian Measure.
-    Upon receiving the worstoff group assignments, the group weights are updated through 
-    exponential gradient ascent and the neural network parameters are updated through
-    gradient descent. 
+    A two phase approach. In the first phase, group assignments are estimated that violate the
+    invariance principle. In the second phase, the estimated group assignments are used to train
+    an invariant risk minimizer. 
     """
 
     def __init__(self, hparams):
@@ -41,14 +40,18 @@ class EIIL(BaseTrain):
         super(EIIL, self).get_config()
 
         # Additional Parameters
-        self.est_groups = torch.randn(len(self.dset.train_set)).requires_grad_()
+        self.est_groups = torch.randn(len(self.dset.train_set), self.dset.n_controls).requires_grad_()
         self.scale = torch.tensor(1.).requires_grad_()
-
+        self.phase2_batch_idx = 0
+        self.phase2_max_batch_idx = int(len(self.dset.train_set) / self.hp.batch_size)
+        
         # Additional hyperparameters
         self.eiil_phase1_done = False
         self.eiil_refmodel_epochs = self.hp.eiil_refmodel_epochs
         self.eiil_phase1_steps = self.hp.eiil_phase1_steps
         self.eiil_phase1_lr = self.hp.eiil_phase1_lr
+        self.eiil_phase2_penalwt = self.hp.eiil_phase2_penalwt
+        self.eiil_phase2_annliter = self.hp.eiil_phase2_annliter
         
         # params to gpu
         if self.hp.flag_usegpu and torch.cuda.is_available():
@@ -112,46 +115,31 @@ class EIIL(BaseTrain):
             for batch_idx, batch in enumerate(self.train_loader):
                 x = batch[0].float()
                 y = batch[1].long()
-                c = batch[2].long()
+                #c = batch[2].long()
                 if self.hp.flag_usegpu and torch.cuda.is_available():
                     x = x.cuda()
                     y = y.cuda()
-                    c = c.cuda()
+                    #c = c.cuda()
 
-                est_groups_batch = est_groups[batch_idx * self.hp.batch_size:(batch_idx + 1) * self.hp.batch_size]
+                est_groups_batch = self.est_groups[batch_idx * self.hp.batch_size:(batch_idx + 1) * self.hp.batch_size]
 
                 # Compute loss 
                 y_logit = self.model_ref(x)
-                y_pred = torch.argmax(y_logit, 1)
+                loss = F.cross_entropy(y_logit * self.scale, y, reduction='none')
+                loss_groups = (loss.squeeze() * F.softmax(est_groups_batch, dim=1)).mean()
+                grad_groups = autograd.grad(loss_groups, [self.scale], create_graph=True)[0]
+                penalty = (grad_groups ** 2).mean()
+                npenalty = - penalty
 
-                loss = F.cross_entropy(y_logit, y)
-                
-                self.compute_penalty_loss(est_groups_batch, )
                 # Compute gradient.
-                self.optimizer_ref.zero_grad()
-                loss.backward()
-                self.optimizer_ref.step()
-        
-        env_w = torch.randn(len(logits)).cuda().requires_grad_()
-        optimizer = optim.Adam([env_w], lr=0.001)
+                optimizer_groups.zero_grad()
+                npenalty.backward(retain_graph=True)
+                optimizer_groups.step()
 
-        print('learning soft environment assignments')
-        for i in tqdm(range(n_steps)):
-            # penalty for env a
-            lossa = (loss.squeeze() * env_w.sigmoid()).mean()
-            grada = autograd.grad(lossa, [scale], create_graph=True)[0]
-            penaltya = torch.sum(grada**2)
-            # penalty for env b
-            lossb = (loss.squeeze() * (1-env_w.sigmoid())).mean()
-            gradb = autograd.grad(lossb, [scale], create_graph=True)[0]
-            penaltyb = torch.sum(gradb**2)
-            # negate
-            npenalty = - torch.stack([penaltya, penaltyb]).mean()
-            
-            optimizer.zero_grad()
-            npenalty.backward(retain_graph=True)
-            optimizer.step()
-            
+        # Compute the control groups
+        est_control =  torch.argmax(self.est_groups, 1).detach()
+        return est_control
+        
     def train_step(self, batch):
 
         if self.epoch == 0 and not self.eiil_phase1_done:
@@ -159,7 +147,7 @@ class EIIL(BaseTrain):
             self.train_reference_model()
 
             """Run Phase 1 to infer the groups"""
-            self.infer_groups()
+            est_control = self.infer_groups()
 
             """Update Phase 1 flag"""
             self.eiil_phase1_done = True
@@ -169,58 +157,39 @@ class EIIL(BaseTrain):
         # Prepare data.
         x = batch[0].float()
         y = batch[1].long()
-        c = batch[2].long()
+        #c = batch[2].long()
         if self.hp.flag_usegpu and torch.cuda.is_available():
             x = x.cuda()
             y = y.cuda()
-            c = c.cuda()
+            #c = c.cuda()
 
-        # Compute loss 
+        # Compute XE loss
         y_logit = self.model(x)
         y_pred = torch.argmax(y_logit, 1)
-
-        loss = F.cross_entropy(y_logit, y, reduction='none')
-
-        # Get labelled loss
-        g_lab = (c.unsqueeze(1) == self.map_vector).float() # 128 X 1, 1 X 4 -> 128 X 4
-        loss_lab, loss_lab_gp = self.compute_loss(g_lab[c!=DF_M], loss[c!=DF_M])
+        loss = F.cross_entropy(y_logit, y)
         
-        # Get unlabelled loss
-        g_hat = self.solver.cvxsolve(losses=loss,
-                                     weights=self.weights)
-        assert (torch.norm(torch.sum(g_hat, 1) - torch.ones(self.hp.batch_size)) < TOL), 'simplex constraints not satisfied'
+        # Compute penalty loss
+        est_control_batch  = est_control[self.phase2_batch_idx * self.hp.batch_size:(self.phase2_batch_idx + 1) * self.hp.batch_size]
+        self.phase2_batch_idx = (self.phase2_batch_idx + 1) % (self.phase2_max_batch_idx)
         
-        assert (torch.mean(torch.mean(g_hat, 0) - torch.tensor(self.worstoffdro_marginals)) <= self.hp.epsilon), 'marginal constraints not satisfied'
+        scale = torch.tensor(1.).requires_grad_()
         if self.hp.flag_usegpu and torch.cuda.is_available():
-            g_hat = g_hat.cuda()
-        loss_unlab, loss_unlab_gp = self.compute_loss(g_hat[c==DF_M], loss[c==DF_M])
-        
-        # Total loss
-        if self.epoch >= self.worstoffdro_latestart:
-            loss_worstoffdro = loss_lab + self.worstoffdro_lambda * loss_unlab
-        else:
-            loss_worstoffdro = loss_lab
+            scale = scale.cuda()
+        loss_scale = F.cross_entropy(y_logit*scale, y)
+        grad = autograd.grad(loss_scale, [scale], create_graph=True)[0]
+        loss_penalty = torch.sum(grad**2)
             
-        # Update Neural network parameters
-        self.optimizer.zero_grad()
-        loss_worstoffdro.backward()
-        self.optimizer.step()
+        # Penalty regularization
+        penalty_weight = (self.eiil_phase2_penalwt
+                          if self.epoch >= self.eiil_phase2_annliter else 1.0)
+        loss += penalty_weight * loss_penalty
+        if penalty_weight > 1.0:
+            # Rescale the entire loss to keep gradients in a reasonable range
+            loss /= penalty_weight
 
-        # Update Weights
-        if self.epoch >= self.worstoffdro_latestart:
-            loss_worstoffdro_gp = (loss_lab_gp + self.worstoffdro_lambda * loss_unlab_gp).view(-1)
-        else:
-            loss_worstoffdro_gp = loss_lab_gp.view(-1)
-            
-        self.weights = self.weights * torch.exp(self.worstoffdro_stepsize*loss_worstoffdro_gp.data)
-        self.weights = self.weights/(self.weights.sum())
-
-        # Algorithm Trackers
-        for i in range(len(self.weights)):
-            self.writer.add_scalar(f'train/weights.{i}', self.weights[i], self.epoch)
-            self.writer.add_scalar(f'train/weights_adjusted.{i}', self.weights[i]/self.worstoffdro_marginals[i], self.epoch)
-            self.writer.add_scalar(f'train/g_hat_batch_loss.{i}', loss_unlab_gp[0, i], self.epoch)
-            if sum(c==i) > 0: self.writer.add_scalar(f'train/g_star_batch_loss.{i}', loss[c==i].mean(), self.epoch) 
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
         
         # Update metrics.
         # Maintains running average over all the metrics

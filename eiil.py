@@ -20,9 +20,11 @@ TOL = 1e-4
 
 class EIIL(BaseTrain):
     """
+    This is a fully-unsupervised approach. 
     A two phase approach. In the first phase, group assignments are estimated that violate the
     invariance principle. In the second phase, the estimated group assignments are used to train
     an invariant risk minimizer. 
+    https://arxiv.org/pdf/2010.07249.pdf
     """
 
     def __init__(self, hparams):
@@ -30,9 +32,11 @@ class EIIL(BaseTrain):
 
     def get_ckpt_path(self):
         super(EIIL, self).get_ckpt_path()
-        new_params = ['_worstoffdro_stepsize', self.hp.worstoffdro_stepsize,
-                      '_worstoffdro_marginals', '-'.join(self.hp.worstoffdro_marginals),
-                      '_epsilon', self.hp.epsilon]
+        new_params = ['_eiil_refmodel_epochs', self.hp.eiil_refmodel_epochs,
+                      '_eiil_phase1_steps', self.hp.eiil_phase1_steps,
+                      '_eiil_phase1_lr', self.hp.eiil_phase1_lr,
+                      '_eiil_phase2_penalwt', self.hp.eiil_phase2_penalwt,
+                      '_eiil_phase2_annliter', self.hp.eiil_phase2_annliter]
         self.params_str += '_'.join([str(x) for x in new_params])
         print(self.params_str)
         
@@ -44,9 +48,9 @@ class EIIL(BaseTrain):
         self.scale = torch.tensor(1.).requires_grad_()
         self.phase2_batch_idx = 0
         self.phase2_max_batch_idx = int(len(self.dset.train_set) / self.hp.batch_size)
+        self.phase1_done = False
         
         # Additional hyperparameters
-        self.eiil_phase1_done = False
         self.eiil_refmodel_epochs = self.hp.eiil_refmodel_epochs
         self.eiil_phase1_steps = self.hp.eiil_phase1_steps
         self.eiil_phase1_lr = self.hp.eiil_phase1_lr
@@ -141,8 +145,7 @@ class EIIL(BaseTrain):
         return est_control
         
     def train_step(self, batch):
-
-        if self.epoch == 0 and not self.eiil_phase1_done:
+        if self.epoch == 0 and not self.phase1_done:
             """Train a reference model"""
             self.train_reference_model()
 
@@ -150,8 +153,7 @@ class EIIL(BaseTrain):
             est_control = self.infer_groups()
 
             """Update Phase 1 flag"""
-            self.eiil_phase1_done = True
-
+            self.phase1_done = True
         
         """Trains a model for one step in Phase 2"""
         # Prepare data.

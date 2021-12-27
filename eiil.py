@@ -52,8 +52,8 @@ class EIIL(BaseTrain):
         self.est_groups = torch.randn(len(self.dset.train_set), self.dset.n_controls)
         self.est_control = None
         self.scale = torch.tensor(1.)
+        self.max_batch_idx = int(len(self.dset.train_set) / self.hp.batch_size)        
         self.phase2_batch_idx = 0
-        self.phase2_max_batch_idx = int(len(self.dset.train_set) / self.hp.batch_size)
         self.phase1_done = False
         self.dro_weights = torch.ones(self.dset.n_controls)/self.dset.n_controls
         
@@ -157,32 +157,33 @@ class EIIL(BaseTrain):
         optimizer_groups = optim.Adam([self.est_groups], lr=self.eiil_phase1_lr)
 
         # optimize over the group labels
-        for epoch in range(self.eiil_phase1_steps):
+        for step in range(self.eiil_phase1_steps):
+            loss_scale_all = []
             for batch_idx, batch in enumerate(self.train_loader):
                 x = batch[0].float()
                 y = batch[1].long()
-                #c = batch[2].long()
                 if self.hp.flag_usegpu and torch.cuda.is_available():
                     x = x.cuda()
                     y = y.cuda()
-                    #c = c.cuda()
-
-                est_groups_batch = self.est_groups[(batch_idx * self.hp.batch_size):((batch_idx + 1) * self.hp.batch_size)]
-
-                # Compute loss 
+                # Aggregate loss values over batches 
                 y_logit = self.model_ref(x)
-                loss = F.cross_entropy(y_logit * self.scale, y, reduction='none')
-                loss_groups = torch.multiply(loss.unsqueeze(1), F.softmax(est_groups_batch, dim=1)).mean(0)
-                penalty = 0.
-                for loss_idx, loss_group in enumerate(loss_groups):
-                    grad_group = autograd.grad(loss_group, [self.scale], create_graph=True)[0]
-                    penalty += torch.sum(grad_group**2)
-                npenalty = - penalty / (loss_idx+1)
+                loss_scale = F.cross_entropy(y_logit * self.scale, y, reduction='none')
+                loss_scale_all.append(loss_scale)
 
-                # Compute gradient.
-                optimizer_groups.zero_grad()
-                npenalty.backward(retain_graph=True)
-                optimizer_groups.step()
+            # Perform update step
+            loss = torch.cat(loss_scale_all)
+            softmax_est_groups = F.softmax(self.est_groups[:(self.max_batch_idx*self.hp.batch_size)], dim=1)
+            loss_groups = torch.multiply(loss.unsqueeze(1), softmax_est_groups).mean(0)
+            penalty = 0.
+            for loss_idx, loss_group in enumerate(loss_groups):
+                grad_group = autograd.grad(loss_group, [self.scale], create_graph=True)[0]
+                penalty += torch.sum(grad_group**2)
+            npenalty = - penalty / (loss_idx+1)
+
+            # Compute gradient
+            optimizer_groups.zero_grad()
+            npenalty.backward(retain_graph=True)
+            optimizer_groups.step()
 
         # Compute the control groups
         self.est_control =  torch.argmax(self.est_groups, 1).detach()
@@ -236,7 +237,7 @@ class EIIL(BaseTrain):
         y_logit = self.model(x)
         y_pred = torch.argmax(y_logit, 1)
         est_control_batch  = self.est_control[self.phase2_batch_idx * self.hp.batch_size:(self.phase2_batch_idx + 1) * self.hp.batch_size]
-        self.phase2_batch_idx = (self.phase2_batch_idx + 1) % (self.phase2_max_batch_idx)
+        self.phase2_batch_idx = (self.phase2_batch_idx + 1) % (self.max_batch_idx)
 
         if self.eiil_phase2_method == 'eiil_phase2_irm':
             # Compute XE loss

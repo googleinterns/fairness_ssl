@@ -11,6 +11,7 @@ from erm import ERM
 from groupdro import GroupDRO
 from unsupdro import UnsupDRO
 from worstoffdro import WorstoffDRO
+from eiil import EIIL
 
 from util.utils import HParams
 from util.utils import upload
@@ -44,7 +45,7 @@ flags.DEFINE_string(name='gcs_bucket_path_prefix',
 
 # Optimization.
 flags.DEFINE_enum(name='method', default='erm',
-                  enum_values=['erm', 'groupdro', 'unsupdro', 'worstoffdro'],
+                  enum_values=['erm', 'groupdro', 'unsupdro', 'worstoffdro', 'eiil'],
                   help='method.')
 flags.DEFINE_integer(name='seed', default=42, help='random seed for optimizer.')
 flags.DEFINE_enum(name='optimizer', default='Adam',
@@ -90,7 +91,7 @@ flags.DEFINE_float(name='epsilon', default=0.001, help='The tolerance when compu
 flags.DEFINE_integer(name='eiil_refmodel_epochs', default=501, help='number of epochs for training the reference model.')
 flags.DEFINE_integer(name='eiil_phase1_steps', default=501, help='number of steps for training the phase1.')
 flags.DEFINE_float(name='eiil_phase1_lr', default=0.0001, help='learning rate of phase1 training.')
-flags.DEFINE_float(name='eill_phase2_penalwt', default=191257, help='regularization coefficient in phase2.')
+flags.DEFINE_float(name='eiil_phase2_penalwt', default=191257, help='regularization coefficient in phase2.')
 flags.DEFINE_integer(name='eiil_phase2_annliter', default=190, help='penalty anneal iterations.')
 
 # SSL Parameters
@@ -113,6 +114,8 @@ def get_trainer(hparams):
         trainer = UnsupDRO(hparams)
     elif hparams.method == 'worstoffdro':
         trainer = WorstoffDRO(hparams)
+    elif hparams.method == 'eiil':
+        trainer = EIIL(hparams)
     else:
         raise NotImplementedError
 

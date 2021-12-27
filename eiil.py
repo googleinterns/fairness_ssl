@@ -35,8 +35,10 @@ class EIIL(BaseTrain):
         new_params = ['_eiil_refmodel_epochs', self.hp.eiil_refmodel_epochs,
                       '_eiil_phase1_steps', self.hp.eiil_phase1_steps,
                       '_eiil_phase1_lr', self.hp.eiil_phase1_lr,
+                      '_eiil_phase2_method', self.hp.eiil_phase2_method,                      
                       '_eiil_phase2_penalwt', self.hp.eiil_phase2_penalwt,
-                      '_eiil_phase2_annliter', self.hp.eiil_phase2_annliter]
+                      '_eiil_phase2_annliter', self.hp.eiil_phase2_annliter,
+                      '_eiil_phase2_drostep', self.hp.eiil_phase2_drostep]
         self.params_str += '_'.join([str(x) for x in new_params])
         print(self.params_str)
         
@@ -53,13 +55,16 @@ class EIIL(BaseTrain):
         self.phase2_batch_idx = 0
         self.phase2_max_batch_idx = int(len(self.dset.train_set) / self.hp.batch_size)
         self.phase1_done = False
+        self.dro_weights = torch.ones(self.dset.n_controls)/self.dset.n_controls
         
         # Additional hyperparameters
         self.eiil_refmodel_epochs = self.hp.eiil_refmodel_epochs
         self.eiil_phase1_steps = self.hp.eiil_phase1_steps
         self.eiil_phase1_lr = self.hp.eiil_phase1_lr
+        self.eiil_phase2_method = self.hp.eiil_phase2_method
         self.eiil_phase2_penalwt = self.hp.eiil_phase2_penalwt
         self.eiil_phase2_annliter = self.hp.eiil_phase2_annliter
+        self.eiil_phase2_drostep = self.hp.eiil_phase2_drostep
         
         # params to gpu
         if self.hp.flag_usegpu and torch.cuda.is_available():
@@ -69,6 +74,25 @@ class EIIL(BaseTrain):
         # trainable parameters
         self.est_groups = self.est_groups.requires_grad_()
         self.scale = self.scale.requires_grad_()
+
+    def stats_per_control(self, sample_losses, cid):
+        control_map = (cid == torch.arange(self.dset.n_controls).unsqueeze(1).long()).float()
+        control_count = control_map.sum(1)
+        divide = control_count + (control_count==0).float() # handling None
+        control_loss = (control_map @ sample_losses.view(-1))/divide
+        return control_loss, control_count
+
+    def calculate_groupdro_loss(self, control_loss, control_count):
+        self.dro_weights = self.dro_weights * torch.exp(self.eiil_phase2_drostep*control_loss.data)
+        self.dro_weights = self.dro_weights/(self.dro_weights.sum())
+
+        loss_groupdro = control_loss @ self.dro_weights
+
+        # Track GroupDRO weights
+        for i in range(len(self.dro_weights)):
+            self.writer.add_scalar(f'train/weights.{i}', self.dro_weights[i], self.epoch)
+
+        return loss_groupdro
         
     def train_reference_model(self):
         # Model architecture for reference model (using DataParallel).
@@ -209,30 +233,47 @@ class EIIL(BaseTrain):
             y = y.cuda()
             c = c.cuda()
 
-        # Compute XE loss
         y_logit = self.model(x)
         y_pred = torch.argmax(y_logit, 1)
-        loss = F.cross_entropy(y_logit, y)
-
-        # Compute penalty loss
         est_control_batch  = self.est_control[self.phase2_batch_idx * self.hp.batch_size:(self.phase2_batch_idx + 1) * self.hp.batch_size]
         self.phase2_batch_idx = (self.phase2_batch_idx + 1) % (self.phase2_max_batch_idx)
-        
-        scale = torch.tensor(1.)
-        if self.hp.flag_usegpu and torch.cuda.is_available():
-            scale = scale.cuda()
-        scale = scale.requires_grad_()
-        loss_scale = F.cross_entropy(y_logit*scale, y)
-        grad = autograd.grad(loss_scale, [scale], create_graph=True)[0]
-        loss_penalty = torch.sum(grad**2)
+
+        if self.eiil_phase2_method == 'eiil_phase2_irm':
+            # Compute XE loss
+            loss = F.cross_entropy(y_logit, y)
+
+            # Compute penalty loss       
+            scale = torch.tensor(1.)
+            if self.hp.flag_usegpu and torch.cuda.is_available():
+                scale = scale.cuda()
+            scale = scale.requires_grad_()
+            loss_scale = F.cross_entropy(y_logit*scale, y, reduction='none')
+            loss_penalty = 0.
+            for cidx in range(self.dset.n_controls):
+                loss_group = loss_scale[est_control_batch==cidx].mean()
+                if torch.isnan(loss_group): continue # If empty array then continue
+                grad_group = autograd.grad(loss_group, [scale], create_graph=True)[0]
+                loss_penalty += torch.sum(grad_group**2)
+            loss_penalty = loss_penalty / self.dset.n_controls
             
-        # Penalty regularization
-        penalty_weight = (self.eiil_phase2_penalwt
-                          if self.epoch >= self.eiil_phase2_annliter else 1.0)
-        loss += penalty_weight * loss_penalty
-        if penalty_weight > 1.0:
-            # Rescale the entire loss to keep gradients in a reasonable range
-            loss /= penalty_weight
+            # Penalty regularization
+            penalty_weight = (self.eiil_phase2_penalwt
+                              if self.epoch >= self.eiil_phase2_annliter else 1.0)
+            loss += penalty_weight * loss_penalty
+            if penalty_weight > 1.0:
+                # Rescale the entire loss to keep gradients in a reasonable range
+                loss /= penalty_weight
+            else:
+                pass
+
+        elif self.eiil_phase2_method == 'eiil_phase2_groupdro':
+            loss_all = F.cross_entropy(y_logit, y, reduction='none')
+            control_loss, control_count = self.stats_per_control(loss_all.cpu(), est_control_batch.cpu())
+            loss = self.calculate_groupdro_loss(control_loss, control_count)
+        else:
+            raise NotImplementedError
+        
+                
 
         self.optimizer.zero_grad()
         loss.backward()

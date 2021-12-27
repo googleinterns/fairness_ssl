@@ -95,6 +95,9 @@ flags.DEFINE_integer(name='eiil_phase1_steps', default=501, help='number of step
 flags.DEFINE_float(name='eiil_phase1_lr', default=0.0001, help='learning rate of phase1 training.')
 flags.DEFINE_float(name='eiil_phase2_penalwt', default=191257, help='regularization coefficient in phase2.')
 flags.DEFINE_integer(name='eiil_phase2_annliter', default=190, help='penalty anneal iterations.')
+flags.DEFINE_enum(name='eiil_phase2_method', default='eiil_phase2_irm',
+                  enum_values=['eiil_phase2_irm', 'eiil_phase2_groupdro'], help='method for phase2.')
+flags.DEFINE_float(name='eiil_phase2_drostep', default=0.01, help='step size for the dro method in phase2.')
 
 # SSL Parameters
 flags.DEFINE_float(name='lab_split', default=1.0,

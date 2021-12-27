@@ -118,8 +118,9 @@ class EIIL(BaseTrain):
             self.scheduler_ref.step()
 
             # Print message
-            message=f'Phase 1: {epoch}/{self.eiil_refmodel_epochs} train accuracy: {self.metrics_ref.get_avg()}'
+            message=f'Pre-train: {epoch}/{self.eiil_refmodel_epochs} train accuracy: {self.metrics_ref.get_avg()}'
             print(message)
+            self.logf.write(message+'\n')
 
     def infer_groups(self):
        
@@ -131,6 +132,9 @@ class EIIL(BaseTrain):
         # optimize over the group labels
         for epoch in range(self.eiil_phase1_steps):
             for batch_idx, batch in enumerate(self.train_loader):
+                print(' ')
+                if batch_idx in [2,3,4]: 
+                    print(batch[0][9, 0])
                 x = batch[0].float()
                 y = batch[1].long()
                 #c = batch[2].long()
@@ -159,6 +163,27 @@ class EIIL(BaseTrain):
         # Compute the control groups
         self.est_control =  torch.argmax(self.est_groups, 1).detach()
         
+        # Compute accuracy of the estimated control groups
+        if self.hp.lab_split != 1.0:
+            print('lab_split needs to be 1.0 to compute the group estimation accuracy')
+            return
+        
+        control_acc = AverageMeter()
+        control_acc.reset()
+        for batch_idx, batch in enumerate(self.train_loader):
+            c = batch[2].long()
+            if self.hp.flag_usegpu and torch.cuda.is_available():
+                c = c.cuda()
+
+            control_pred = self.est_control[(batch_idx * self.hp.batch_size):((batch_idx + 1) * self.hp.batch_size)]
+            control_acc.update(val=MetricsEval().accuracy(control_pred, c),
+                               num=len(c))
+
+        # Print message
+        message=f'Phase1: Control Group Estimation Accuracy : {control_acc.get_avg()}'
+        print(message)
+        self.logf.write(message+'\n')
+        
     def train_step(self, batch):
         if self.epoch == 0 and not self.phase1_done:
             """Train a reference model"""
@@ -175,6 +200,9 @@ class EIIL(BaseTrain):
             self.phase1_done = True
         
         """Trains a model for one step in Phase 2"""
+        if self.phase2_batch_idx in [2,3,4]: 
+            print(batch[0][9, 0])
+        
         # Prepare data.
         x = batch[0].float()
         y = batch[1].long()

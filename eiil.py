@@ -4,13 +4,13 @@ ref - https://arxiv.org/pdf/2010.07249.pdf
 
 import torch
 import torch.nn.functional as F
+from torch import autograd
+import torch.optim as optim
 
 from util.train import BaseTrain
 from util.solver import Solver
-from util.utils import HParams, DEFAULT_MISSING_CONST as DF_M
+from util.utils import HParams, AverageMeter, DEFAULT_MISSING_CONST as DF_M
 from util.metrics_store import MetricsEval
-
-from pytorch_model_summary import summary
 
 import numpy as np
 
@@ -44,8 +44,9 @@ class EIIL(BaseTrain):
         super(EIIL, self).get_config()
 
         # Additional Parameters
-        self.est_groups = torch.randn(len(self.dset.train_set), self.dset.n_controls).requires_grad_()
-        self.scale = torch.tensor(1.).requires_grad_()
+        self.est_groups = torch.randn(len(self.dset.train_set), self.dset.n_controls)
+        self.est_control = None
+        self.scale = torch.tensor(1.)
         self.phase2_batch_idx = 0
         self.phase2_max_batch_idx = int(len(self.dset.train_set) / self.hp.batch_size)
         self.phase1_done = False
@@ -61,6 +62,10 @@ class EIIL(BaseTrain):
         if self.hp.flag_usegpu and torch.cuda.is_available():
             self.est_groups = self.est_groups.cuda()
             self.scale = self.scale.cuda()
+
+        # trainable parameters
+        self.est_groups = self.est_groups.requires_grad_()
+        self.scale = self.scale.requires_grad_()
         
     def train_reference_model(self):
         # Model architecture for reference model (using DataParallel).
@@ -79,14 +84,18 @@ class EIIL(BaseTrain):
         # Train the reference model
         self.model_ref.train()
         for epoch in range(self.eiil_refmodel_epochs):
+            # reset the metrics
+            self.metrics_ref.reset()
+
+            # train step
             for batch in self.train_loader:
                 x = batch[0].float()
                 y = batch[1].long()
-                c = batch[2].long()
+                #c = batch[2].long()
                 if self.hp.flag_usegpu and torch.cuda.is_available():
                     x = x.cuda()
                     y = y.cuda()
-                    c = c.cuda()
+                    #c = c.cuda()
 
                 # Compute loss 
                 y_logit = self.model_ref(x)
@@ -101,19 +110,24 @@ class EIIL(BaseTrain):
 
                 # Compute Accuracy
                 self.metrics_ref.update(val=MetricsEval().accuracy(y_pred, y),
-                                        size=len(y))
+                                        num=len(y))
 
             # End of one epoch
+            # No eval epoch
+            # Scheduler update
             self.scheduler_ref.step()
-            message=f'Phase 1: {epoch}/{self.eiil_refmodel_epochs} train accuracy-{self.metrics_ref.get_avg()}'
+
+            # Print message
+            message=f'Phase 1: {epoch}/{self.eiil_refmodel_epochs} train accuracy: {self.metrics_ref.get_avg()}'
             print(message)
 
     def infer_groups(self):
+       
         self.model_ref.eval()
 
         # optmizer for groups
         optimizer_groups = optim.Adam([self.est_groups], lr=self.eiil_phase1_lr)
-            
+
         # optimize over the group labels
         for epoch in range(self.eiil_phase1_steps):
             for batch_idx, batch in enumerate(self.train_loader):
@@ -125,15 +139,17 @@ class EIIL(BaseTrain):
                     y = y.cuda()
                     #c = c.cuda()
 
-                est_groups_batch = self.est_groups[batch_idx * self.hp.batch_size:(batch_idx + 1) * self.hp.batch_size]
+                est_groups_batch = self.est_groups[(batch_idx * self.hp.batch_size):((batch_idx + 1) * self.hp.batch_size)]
 
                 # Compute loss 
                 y_logit = self.model_ref(x)
                 loss = F.cross_entropy(y_logit * self.scale, y, reduction='none')
-                loss_groups = (loss.squeeze() * F.softmax(est_groups_batch, dim=1)).mean()
-                grad_groups = autograd.grad(loss_groups, [self.scale], create_graph=True)[0]
-                penalty = (grad_groups ** 2).mean()
-                npenalty = - penalty
+                loss_groups = torch.multiply(loss.unsqueeze(1), F.softmax(est_groups_batch, dim=1)).mean(0)
+                penalty = 0.
+                for loss_idx, loss_group in enumerate(loss_groups):
+                    grad_group = autograd.grad(loss_group, [self.scale], create_graph=True)[0]
+                    penalty += torch.sum(grad_group**2)
+                npenalty = - penalty / (loss_idx+1)
 
                 # Compute gradient.
                 optimizer_groups.zero_grad()
@@ -141,17 +157,20 @@ class EIIL(BaseTrain):
                 optimizer_groups.step()
 
         # Compute the control groups
-        est_control =  torch.argmax(self.est_groups, 1).detach()
-        return est_control
+        self.est_control =  torch.argmax(self.est_groups, 1).detach()
         
     def train_step(self, batch):
         if self.epoch == 0 and not self.phase1_done:
             """Train a reference model"""
+            print('\n\n###### Training Reference Model: Begin ######\n\n')
             self.train_reference_model()
-
+            print('\n\n###### Training Reference Model: End ######\n\n')
+            
             """Run Phase 1 to infer the groups"""
-            est_control = self.infer_groups()
-
+            print('\n\n###### Training Phase 1: Begin ######\n\n')
+            self.infer_groups() # updates self.est_control
+            print('\n\n###### Training Phase 1: End ######\n\n')
+            
             """Update Phase 1 flag"""
             self.phase1_done = True
         
@@ -159,24 +178,25 @@ class EIIL(BaseTrain):
         # Prepare data.
         x = batch[0].float()
         y = batch[1].long()
-        #c = batch[2].long()
+        c = batch[2].long()
         if self.hp.flag_usegpu and torch.cuda.is_available():
             x = x.cuda()
             y = y.cuda()
-            #c = c.cuda()
+            c = c.cuda()
 
         # Compute XE loss
         y_logit = self.model(x)
         y_pred = torch.argmax(y_logit, 1)
         loss = F.cross_entropy(y_logit, y)
-        
+
         # Compute penalty loss
-        est_control_batch  = est_control[self.phase2_batch_idx * self.hp.batch_size:(self.phase2_batch_idx + 1) * self.hp.batch_size]
+        est_control_batch  = self.est_control[self.phase2_batch_idx * self.hp.batch_size:(self.phase2_batch_idx + 1) * self.hp.batch_size]
         self.phase2_batch_idx = (self.phase2_batch_idx + 1) % (self.phase2_max_batch_idx)
         
-        scale = torch.tensor(1.).requires_grad_()
+        scale = torch.tensor(1.)
         if self.hp.flag_usegpu and torch.cuda.is_available():
             scale = scale.cuda()
+        scale = scale.requires_grad_()
         loss_scale = F.cross_entropy(y_logit*scale, y)
         grad = autograd.grad(loss_scale, [scale], create_graph=True)[0]
         loss_penalty = torch.sum(grad**2)
@@ -189,9 +209,9 @@ class EIIL(BaseTrain):
             # Rescale the entire loss to keep gradients in a reasonable range
             loss /= penalty_weight
 
-        optimizer.zero_grad()
+        self.optimizer.zero_grad()
         loss.backward()
-        optimizer.step()
+        self.optimizer.step()
         
         # Update metrics.
         # Maintains running average over all the metrics

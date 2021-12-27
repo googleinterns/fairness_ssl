@@ -43,6 +43,9 @@ class EIIL(BaseTrain):
     def get_config(self):
         super(EIIL, self).get_config()
 
+        # Assert if shuffle_train is False. EIIL requires shuffle_train set as False
+        assert (not self.hp.shuffle_train), 'EIIL requires shuffle_train set as False'
+        
         # Additional Parameters
         self.est_groups = torch.randn(len(self.dset.train_set), self.dset.n_controls)
         self.est_control = None
@@ -88,7 +91,7 @@ class EIIL(BaseTrain):
             self.metrics_ref.reset()
 
             # train step
-            for batch in self.train_loader:
+            for batch_idx, batch in enumerate(self.train_loader):
                 x = batch[0].float()
                 y = batch[1].long()
                 #c = batch[2].long()
@@ -132,9 +135,6 @@ class EIIL(BaseTrain):
         # optimize over the group labels
         for epoch in range(self.eiil_phase1_steps):
             for batch_idx, batch in enumerate(self.train_loader):
-                print(' ')
-                if batch_idx in [2,3,4]: 
-                    print(batch[0][9, 0])
                 x = batch[0].float()
                 y = batch[1].long()
                 #c = batch[2].long()
@@ -200,9 +200,6 @@ class EIIL(BaseTrain):
             self.phase1_done = True
         
         """Trains a model for one step in Phase 2"""
-        if self.phase2_batch_idx in [2,3,4]: 
-            print(batch[0][9, 0])
-        
         # Prepare data.
         x = batch[0].float()
         y = batch[1].long()

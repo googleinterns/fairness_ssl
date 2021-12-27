@@ -23,14 +23,15 @@ DATA_DIRECTORY = 'data/datasets/mnist_dataset/'
 class CMNIST(object):
     """CMNIST data loader."""
 
-    def __init__(self, lab_split = 1.0, reweight=False, seed = 42):
+    def __init__(self, lab_split = 1.0, reweight = False, shuffle_train = True, seed = 42):
         print('Using CMNIST dataset!')
 
         self.data_dir = DATA_DIRECTORY
         self.dataseed = seed
         self.lab_split = lab_split
         self.reweight = reweight
-
+        self.shuffle_train = shuffle_train
+        
         # Noise attributes
         self.label_noise = 0.25
         self.color_noise = [0.2, 0.1, 0.9]
@@ -159,7 +160,7 @@ class CMNIST(object):
             shuffle_train = False
         else:
             sampler_train = None
-            shuffle_train = True
+            shuffle_train = self.shuffle_train
 
         # Full-batch training, adjust the hyper-param in the bin file accordingly
         train_loader = torch.utils.data.DataLoader(self.train_set,

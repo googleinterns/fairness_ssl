@@ -56,15 +56,17 @@ class BaseTrain(object):
         """Gets dataset."""
 
         if self.dataset_name in ['German', 'Adult', 'AdultConfounded', 'Adult2']:
-            return Tabular(self.dataset_name, lab_split=self.hp.lab_split)
+            return Tabular(self.dataset_name, lab_split=self.hp.lab_split, shuffle_train=self.hp.shuffle_train)
         elif self.dataset_name in ['Waterbirds']:
             return Waterbirds(lab_split=self.hp.lab_split, reweight=self.hp.flag_reweight,
+                              shuffle_train=self.hp.shuffle_train,
                               get_dataset_from_lmdb=self.hp.get_dataset_from_lmdb)
         elif self.dataset_name in ['CelebA']:
             return CelebA(lab_split=self.hp.lab_split, reweight=self.hp.flag_reweight,
+                          shuffle_train=self.hp.shuffle_train,
                           get_dataset_from_lmdb=self.hp.get_dataset_from_lmdb)
         elif self.dataset_name in ['CMNIST']:
-            return CMNIST(lab_split=self.hp.lab_split, reweight=self.hp.flag_reweight)
+            return CMNIST(lab_split=self.hp.lab_split, reweight=self.hp.flag_reweight, shuffle_train=self.hp.shuffle_train)
         else:
             raise ValueError('Dataset not supported.')
 

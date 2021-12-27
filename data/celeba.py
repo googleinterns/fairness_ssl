@@ -26,6 +26,7 @@ class CelebA(object):
                  lab_split=1.0,
                  reweight=False,
                  seed=42,
+                 shuffle_train=True,
                  get_dataset_from_lmdb=False,
                  download=True):
         print('Using CelebA dataset!')
@@ -34,6 +35,7 @@ class CelebA(object):
         self.dataseed = seed
         self.lab_split = lab_split
         self.reweight = reweight
+        self.shuffle_train = shuffle_train
         self.get_dataset_from_lmdb = get_dataset_from_lmdb
 
         download = download and get_dataset_from_lmdb
@@ -192,7 +194,7 @@ class CelebA(object):
             shuffle_train = False
         else:
             sampler_train = None
-            shuffle_train = True
+            shuffle_train = self.shuffle_train
 
         train_loader = torch.utils.data.DataLoader(self.train_set,
                                                    batch_size=batch_size,

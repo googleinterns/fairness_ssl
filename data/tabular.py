@@ -17,11 +17,12 @@ import pdb
 class Tabular(object):
   """Tabular data loader."""
 
-  def __init__(self, dataset_name='Adult', lab_split = 1.0, seed = 42):
+  def __init__(self, dataset_name='Adult', lab_split = 1.0, shuffle_train = True, seed = 42):
     print('Using ', dataset_name)
     self.dataset_name = dataset_name
     self.dataseed = seed
     self.lab_split = lab_split
+    self.shuffle_train = shuffle_train
     
     self.load_raw_data(dataset_name=dataset_name)
 
@@ -194,7 +195,7 @@ class Tabular(object):
     # Generate DataLoaders
     train_loader = torch.utils.data.DataLoader(self.train_set,
                                                batch_size=batch_size,
-                                               shuffle= True, drop_last=True)
+                                               shuffle= self.shuffle_train, drop_last=True)
     valid_loader = torch.utils.data.DataLoader(self.val_set,
                                                batch_size=batch_size,
                                                shuffle= False, drop_last=False)

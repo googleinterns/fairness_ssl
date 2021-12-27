@@ -27,6 +27,8 @@ flags.DEFINE_enum(name='dataset', default='Adult',
                   help='dataset.')
 flags.DEFINE_integer(name='dataseed', default=0,
                      help='random seed for dataset construction.')
+flags.DEFINE_bool(name='shuffle_train', default=True,
+                  help='Shuffle the samples in the train_loader for every epoch.')
 flags.DEFINE_bool(name='get_dataset_from_lmdb', default=False,
                   help='Gets dataset from LMDB for large image datasets.')
 # Model.

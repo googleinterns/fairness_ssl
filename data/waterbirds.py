@@ -21,13 +21,14 @@ DATA_DIRECTORY = 'data/datasets/waterbirds_dataset/'
 class Waterbirds(object):
     """Waterbirds data loader."""
 
-    def __init__(self, lab_split=1.0, reweight=False, seed=42, get_dataset_from_lmdb=False):
+    def __init__(self, lab_split=1.0, reweight=False, shuffle_train=True, seed=42, get_dataset_from_lmdb=False):
         print('Using Waterbirds dataset!')
 
         self.data_dir = DATA_DIRECTORY
         self.dataseed = seed
         self.lab_split = lab_split
         self.reweight = reweight
+        self.shuffle_train = shuffle_train
         self.get_dataset_from_lmdb = get_dataset_from_lmdb
       
         if not os.path.exists(self.data_dir):
@@ -168,7 +169,7 @@ class Waterbirds(object):
             shuffle_train = False
         else:
             sampler_train = None
-            shuffle_train = True
+            shuffle_train = self.shuffle_train
     
         train_loader = torch.utils.data.DataLoader(self.train_set,
                                                    batch_size=batch_size,

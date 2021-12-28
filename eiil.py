@@ -158,6 +158,8 @@ class EIIL(BaseTrain):
 
         # optimize over the group labels
         for step in range(self.eiil_phase1_steps):
+            message=f'Phase1: {step}/{self.eiil_phase1_steps}'
+            print(message)
 
             # Intialize target tensors
             y_logit_all = torch.empty(self.max_batch_idx * self.hp.batch_size, self.dset.n_targets)
@@ -189,12 +191,9 @@ class EIIL(BaseTrain):
             npenalty = - penalty / self.dset.n_controls
 
             # Compute gradient
-            print('before1: ', self.est_groups[-65])
             optimizer_groups.zero_grad()
             npenalty.backward(retain_graph=True)
             optimizer_groups.step()
-            print('after1: ', self.est_groups[-65])            
-            print(' ')
             
         # Compute the control groups
         self.est_control =  torch.argmax(self.est_groups, 1).detach()

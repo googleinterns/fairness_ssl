@@ -32,13 +32,13 @@ class EIIL(BaseTrain):
 
     def get_ckpt_path(self):
         super(EIIL, self).get_ckpt_path()
-        new_params = ['_eiil_refmodel_epochs', self.hp.eiil_refmodel_epochs,
-                      '_eiil_phase1_steps', self.hp.eiil_phase1_steps,
-                      '_eiil_phase1_lr', self.hp.eiil_phase1_lr,
-                      '_eiil_phase2_method', self.hp.eiil_phase2_method,                      
-                      '_eiil_phase2_penalwt', self.hp.eiil_phase2_penalwt,
-                      '_eiil_phase2_annliter', self.hp.eiil_phase2_annliter,
-                      '_eiil_phase2_drostep', self.hp.eiil_phase2_drostep]
+        new_params = ['_elref_eps', self.hp.eiil_refmodel_epochs,
+                      '_elp1_stps', self.hp.eiil_phase1_steps,
+                      '_elp1_lr', self.hp.eiil_phase1_lr,
+                      '_elp2_mt', self.hp.eiil_phase2_method,                      
+                      '_elp2_pw', self.hp.eiil_phase2_penalwt,
+                      '_elp2_ai', self.hp.eiil_phase2_annliter,
+                      '_elp2_dst', self.hp.eiil_phase2_drostep]
         self.params_str += '_'.join([str(x) for x in new_params])
         print(self.params_str)
         
@@ -158,7 +158,15 @@ class EIIL(BaseTrain):
 
         # optimize over the group labels
         for step in range(self.eiil_phase1_steps):
-            loss_scale_all = []
+
+            # Intialize target tensors
+            y_logit_all = torch.empty(self.max_batch_idx * self.hp.batch_size, self.dset.n_targets)
+            y_all = torch.empty(self.max_batch_idx * self.hp.batch_size)
+            if self.hp.flag_usegpu and torch.cuda.is_available():
+                y_logit_all = y_logit_all.cuda()
+                y_all = y_all.cuda()
+
+            # Accumulate labels for the target tensor
             for batch_idx, batch in enumerate(self.train_loader):
                 x = batch[0].float()
                 y = batch[1].long()
@@ -167,24 +175,27 @@ class EIIL(BaseTrain):
                     y = y.cuda()
                 # Aggregate loss values over batches 
                 y_logit = self.model_ref(x)
-                loss_scale = F.cross_entropy(y_logit * self.scale, y, reduction='none')
-                loss_scale_all.append(loss_scale)
+                y_logit_all[(batch_idx * self.hp.batch_size):((batch_idx + 1) * self.hp.batch_size)] = y_logit.detach()
+                y_all[(batch_idx * self.hp.batch_size):((batch_idx + 1) * self.hp.batch_size)] = y                
 
             # Perform update step
-            loss = torch.cat(loss_scale_all)
+            loss_scale = F.cross_entropy(y_logit_all*self.scale, y_all.long(), reduction='none')
             softmax_est_groups = F.softmax(self.est_groups[:(self.max_batch_idx*self.hp.batch_size)], dim=1)
-            loss_groups = torch.multiply(loss.unsqueeze(1), softmax_est_groups).mean(0)
+            loss_groups = torch.multiply(loss_scale.unsqueeze(1), softmax_est_groups).mean(0)
             penalty = 0.
             for loss_idx, loss_group in enumerate(loss_groups):
                 grad_group = autograd.grad(loss_group, [self.scale], create_graph=True)[0]
                 penalty += torch.sum(grad_group**2)
-            npenalty = - penalty / (loss_idx+1)
+            npenalty = - penalty / self.dset.n_controls
 
             # Compute gradient
+            print('before1: ', self.est_groups[-65])
             optimizer_groups.zero_grad()
             npenalty.backward(retain_graph=True)
             optimizer_groups.step()
-
+            print('after1: ', self.est_groups[-65])            
+            print(' ')
+            
         # Compute the control groups
         self.est_control =  torch.argmax(self.est_groups, 1).detach()
         

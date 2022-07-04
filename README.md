@@ -1,4 +1,4 @@
-# Invariant Learning with Partial Group Labels
+# Towards Group Robustness in the Presence of Partial Group Labels
 
 
 -   **This is not an officially supported Google product.**

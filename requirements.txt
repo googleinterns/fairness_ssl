@@ -1,7 +1,7 @@
 absl-py
 tqdm
 tensorboard
-torch==1.9.0+cu111
+torch==2.8.0
 torchvision==0.10.0+cu111
 pytorch_model_summary
 easydict
